@@ -1828,6 +1828,7 @@
         <button class="fab-btn" id="fab" aria-label="โพสต์">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
+        <button class="nav-btn" id="chat-btn" aria-label="แชท">
         <button class="nav-btn" data-scr="chat" id="chat-btn" aria-label="แชท">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             <span>แชท</span>
@@ -1972,6 +1973,16 @@ function syncProfile(profile) {
     $('#prof-av').src = avURL(profile.seed);
 }
 
+// ---- SCREENS ----
+function goScreen(name) {
+    $$('.screen').forEach(s=>s.classList.remove('active'));
+    const t = name === 'feed' ? $('#home-screen') : (name === 'landing' ? $('#landing-screen') : $(`#scr-${name}`));
+    if (t) t.classList.add('active');
+    $$('.nav-btn[data-scr]').forEach(b=>b.classList.remove('active'));
+    const nb = $(`.nav-btn[data-scr="${name}"]`);
+    if (nb) nb.classList.add('active');
+    if (name==='mine') renderMine();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 // ---- CHAT STATE & SEED CONVERSATIONS ----
 let chatState = {
     activePartnerId: 'Sarocha',
@@ -2033,11 +2044,21 @@ function getChatTime() {
     return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 }
 
+// ---- PANELS ----
+function openPanel(id)  { $(`#${id}`).classList.add('open'); }
+function closePanel(id) { $(`#${id}`).classList.remove('open'); }
 // ---- CHAT FUNCTIONS ----
 function renderChatList(searchQuery = '') {
     const list = $('#chat-conversation-list');
     if (!list) return;
 
+// ---- RENDER FEED ----
+function renderFeed() {
+    const list = $('#feed-list');
+    const filtered = state.quests.filter(q => {
+        const mc = state.filter==='all' || q.category===state.filter;
+        const ms = !state.search || q.want.includes(state.search) || q.offer.includes(state.search) || q.desc.includes(state.search);
+        return mc && ms;
     const filtered = chatState.conversations.filter(c => {
         if (!searchQuery) return true;
         const q = searchQuery.toLowerCase();
@@ -2047,9 +2068,13 @@ function renderChatList(searchQuery = '') {
     $('#chat-active-count').textContent = `${chatState.conversations.length} บทสนทนา`;
 
     if (!filtered.length) {
+        list.innerHTML = `<div class="empty"><span class="ico">🔍</span><p>ไม่พบงานที่ตรงกับการค้นหา</p></div>`;
         list.innerHTML = `<div class="empty" style="padding:40px 10px;"><span class="ico">🔍</span><p style="font-size:0.85rem">ไม่พบบทสนทนา</p></div>`;
         return;
     }
+    list.innerHTML = filtered.map((q,i) => cardHTML(q,i)).join('');
+    $$('.card', list).forEach(c => c.addEventListener('click', ()=>openDetail(c.dataset.id)));
+    $$('.btn-accept', list).forEach(b => b.addEventListener('click', e=>{ e.stopPropagation(); accept(b.dataset.id, b); }));
 
     list.innerHTML = filtered.map(c => {
         const lastMsg = c.messages[c.messages.length - 1];
@@ -2082,6 +2107,34 @@ function renderChatList(searchQuery = '') {
     });
 }
 
+function cardHTML(q, i) {
+    const done = state.accepted.has(q.id);
+    return `
+<div class="card" data-id="${q.id}" style="animation-delay:${i*.07}s">
+  <div class="card-meta">
+    <div class="card-author">
+      <img class="auth-av" width="28" height="28" src="${avURL(q.seed)}" alt="${q.author}">
+      <span class="auth-name">${q.author}</span>
+    </div>
+    <span class="card-time">${q.time}</span>
+  </div>
+  ${catPill(q.category)}
+  <h3 class="card-title">${q.want}</h3>
+  <div class="ex-row">
+    <span style="font-size:1.1rem">🤝</span>
+    <div>
+      <p class="ex-label">สิ่งที่ได้รับกลับมา</p>
+      <p class="ex-val">${q.offer}</p>
+    </div>
+  </div>
+  <p class="card-desc">${q.desc}</p>
+  <div class="card-footer">
+    ${durTag(q.duration)}
+    <button class="btn-accept ${done?'done':''}" data-id="${q.id}" ${done?'disabled':''}>
+      ${done?'✓ ส่งคำขอแล้ว':'ขอแลกเปลี่ยน'}
+    </button>
+  </div>
+</div>`;
 function selectConversation(partnerId) {
     chatState.activePartnerId = partnerId;
     const conv = chatState.conversations.find(c => c.id === partnerId);
@@ -2094,6 +2147,13 @@ function selectConversation(partnerId) {
     $('#chat-sidebar')?.classList.add('room-open');
 }
 
+// ---- RENDER MY QUESTS ----
+function renderMine() {
+    const list = $('#mine-list');
+    const mine = state.quests.filter(q=>state.accepted.has(q.id));
+    if (!mine.length) {
+        list.innerHTML = `<div class="empty"><span class="ico">🌱</span><p>ยังไม่มีการแลกเปลี่ยนเลยน้า</p><p style="font-size:.82rem">กลับไปหน้าหลักแล้วเลือกงานที่สนใจนะจ๊ะ</p></div>`;
+        return;
 function renderMessages() {
     const conv = chatState.conversations.find(c => c.id === chatState.activePartnerId);
     if (!conv) return;
@@ -2180,6 +2240,8 @@ function sendChatMessage(text) {
             renderChatList($('#chat-search-in')?.value || '');
         }, 1600);
     }
+    list.innerHTML = mine.map((q,i)=>cardHTML(q,i)).join('');
+    $$('.card', list).forEach(c=>c.addEventListener('click',()=>openDetail(c.dataset.id)));
 }
 
 function startChatWith(partnerName, questTitle, seed = 'Pim', duration = '30 นาที') {
@@ -2244,11 +2306,13 @@ function openDetail(id) {
 <div class="det-footer">
   <button class="btn-close" id="det-close">ปิด</button>
   <button class="btn-confirm ${done?'done':''}" id="det-acc" ${done?'disabled':''}>
+    ${done?'✓ ส่งคำขอแล้ว':'🚀 ขอแลกเปลี่ยน'}
     ${done?'✓ ส่งคำขอแล้ว':'💬 ขอแลกเปลี่ยน & แชท'}
   </button>
 </div>`;
     openPanel('det-ov');
     $('#det-close').onclick = ()=>closePanel('det-ov');
+    $('#det-acc').onclick = ()=>{ accept(id, $('#det-acc')); renderFeed(); renderMine(); };
     $('#det-acc').onclick = ()=>{ 
         accept(id, $('#det-acc')); 
         closePanel('det-ov'); 
@@ -2260,12 +2324,15 @@ function openDetail(id) {
 // ---- FIRESTORE LISTENER ----
 function startFirestoreListener() {
     const q = query(questsRef, orderBy('createdAt', 'desc'));
+    // Show loading skeleton
     $('#feed-list').innerHTML = `<div class="empty"><span class="ico">⏳</span><p>กำลังโหลด...</p></div>`;
     onSnapshot(q, async snapshot => {
+        // Seed initial data if collection is empty
         if (snapshot.empty) {
             for (const quest of SEED_QUESTS) {
                 await addDoc(questsRef, { ...quest, createdAt: serverTimestamp() });
             }
+            return; // onSnapshot will fire again with the seeded data
             return;
         }
         state.quests = snapshot.docs.map(doc => ({
@@ -2274,6 +2341,7 @@ function startFirestoreListener() {
             time: timeAgo(doc.data().createdAt)
         }));
         renderFeed();
+        // Keep "Mine" tab in sync if active
         if ($('#scr-mine')?.classList.contains('active')) renderMine();
     }, err => {
         console.error('Firestore error:', err);
@@ -2363,6 +2431,7 @@ function renderMine() {
 
 // ---- INIT ----
 function init() {
+    // Start Firestore real-time listener
     startFirestoreListener();
 
     // Navigation buttons
@@ -2403,6 +2472,7 @@ function init() {
     $('#open-post').addEventListener('click', ()=>openPanel('post-ov'));
     $('#profile-btn').addEventListener('click', ()=>{ $('#prof-name-in').value = $('.greeting').textContent.replace('สวัสดี, ','').replace('! 👋',''); buildAvPicker(); openPanel('prof-ov'); });
     $('#open-profile').addEventListener('click', ()=>{ $('#prof-name-in').value = $('.greeting').textContent.replace('สวัสดี, ','').replace('! 👋',''); buildAvPicker(); openPanel('prof-ov'); });
+    $('#chat-btn').addEventListener('click', ()=>goScreen('mine'));
 
     // Chat Events
     $('#chat-send-btn')?.addEventListener('click', () => {
