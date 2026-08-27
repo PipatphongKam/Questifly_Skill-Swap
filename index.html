@@ -1,0 +1,2506 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#121a14">
+    <title>Questifly | แลกเปลี่ยนความรู้</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Prompt:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+    /* ===== DESIGN TOKENS ===== */
+    :root {
+        --bg:          #121a14;
+        --surface:     #1a281c;
+        --surface2:    #233626;
+        --surface-glass: rgba(26, 40, 28, 0.75);
+        --card:        #fdfcf7;
+        --carddim:     #f4f0e8;
+        --cborder:     rgba(255, 255, 255, 0.09);
+        --cborder-light: rgba(255, 255, 255, 0.16);
+        --cardbdr:     #ddd5b8;
+        --green:       #5cba6e;
+        --green-bright:#6de283;
+        --green-glow:  rgba(92, 186, 110, 0.28);
+        --amber:       #e8b86d;
+        --amber-glow:  rgba(232, 184, 109, 0.2);
+        --txt:         #e8ede6;
+        --txtdim:      #91a693;
+        --txtdk:       #1a291b;
+        --txtmed:      #455c47;
+        --navh:        70px;
+    }
+
+    /* ===== RESET & SCROLL SETUP ===== */
+    *, *::before, *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+        scroll-behavior: smooth;
+        overflow-y: auto;
+        overflow-x: hidden;
+        min-height: 100%;
+    }
+
+    body {
+        min-height: 100vh;
+        font-family: 'Sarabun', sans-serif;
+        background-color: var(--bg);
+        color: var(--txt);
+        overflow-y: auto;
+        overflow-x: hidden;
+        position: relative;
+        width: 100%;
+        line-height: 1.6;
+    }
+
+    button { cursor: pointer; font-family: inherit; border: none; }
+    input, textarea, select { font-family: inherit; outline: none; }
+
+    /* ===== AMBIENT GLOW BLOBS ===== */
+    .blob {
+        position: fixed;
+        border-radius: 50%;
+        filter: blur(100px);
+        pointer-events: none;
+        z-index: 0;
+        animation: drift 20s ease-in-out infinite alternate;
+    }
+    .blob-1 {
+        width: 450px; height: 450px;
+        background: rgba(92, 186, 110, 0.13);
+        top: -100px; left: -100px;
+    }
+    .blob-2 {
+        width: 380px; height: 380px;
+        background: rgba(232, 184, 109, 0.1);
+        bottom: -50px; right: -80px;
+        animation-delay: -9s;
+    }
+    .blob-3 {
+        width: 300px; height: 300px;
+        background: rgba(92, 186, 110, 0.08);
+        top: 50%; left: 35%;
+        animation-delay: -14s;
+    }
+    @keyframes drift {
+        from { transform: translate(0, 0) scale(1); }
+        to   { transform: translate(40px, 60px) scale(1.15); }
+    }
+
+    /* ===== APP SHELL ===== */
+    #app {
+        position: relative;
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: visible;
+        z-index: 1;
+    }
+
+    /* ===== SCREENS ===== */
+    .screen {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        min-height: 100vh;
+        overflow: visible;
+        position: relative;
+    }
+    .screen.active {
+        display: flex;
+    }
+
+    /* ===== HIDE APP NAV WHEN ON LANDING ===== */
+    #app:has(#landing-screen.active) .nav,
+    .on-landing .nav {
+        display: none !important;
+    }
+
+    /* ===== LANDING PAGE STYLES ===== */
+    .landing-screen {
+        position: relative;
+        width: 100%;
+        overflow: visible;
+        padding-bottom: 60px;
+    }
+    .landing-grid {
+        position: absolute;
+        inset: 0;
+        background:
+            linear-gradient(90deg, rgba(92, 186, 110, 0.04) 1px, transparent 1px) 0 0 / 50px 50px,
+            linear-gradient(rgba(92, 186, 110, 0.04) 1px, transparent 1px) 0 0 / 50px 50px;
+        pointer-events: none;
+        z-index: 0;
+        mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+        -webkit-mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+    }
+
+    .landing-nav {
+        position: relative;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 28px;
+        background: rgba(18, 26, 20, 0.8);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--cborder);
+        border-radius: 999px;
+        margin: 20px 24px 0;
+    }
+    .landing-logo {
+        font-family: 'Prompt', sans-serif;
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: var(--txt);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        letter-spacing: -0.5px;
+    }
+    .landing-logo span {
+        color: var(--green-bright);
+        font-weight: 900;
+    }
+    .landing-menu {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+    }
+    .landing-link {
+        color: var(--txtdim);
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    .landing-link:hover {
+        color: var(--txt);
+    }
+    .landing-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .landing-signin {
+        background: transparent;
+        color: var(--txt);
+        padding: 8px 20px;
+        border: 1px solid var(--cborder);
+        border-radius: 999px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    .landing-signin:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--green);
+    }
+    .landing-signup {
+        background: linear-gradient(135deg, var(--green), #479a57);
+        color: #fff;
+        padding: 9px 22px;
+        border-radius: 999px;
+        font-size: 0.88rem;
+        font-weight: 700;
+        box-shadow: 0 4px 16px var(--green-glow);
+        transition: all 0.25s;
+    }
+    .landing-signup:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 22px rgba(92, 186, 110, 0.45);
+    }
+
+    /* ===== HERO STAGE ===== */
+    .landing-stage {
+        position: relative;
+        z-index: 5;
+        min-height: calc(85vh - 80px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 24px 40px;
+        width: 100%;
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+    .landing-copy {
+        text-align: center;
+        max-width: 760px;
+        z-index: 10;
+        position: relative;
+    }
+    .landing-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 2.5px;
+        color: var(--green-bright);
+        background: rgba(92, 186, 110, 0.12);
+        border: 1px solid rgba(92, 186, 110, 0.25);
+        padding: 6px 18px;
+        border-radius: 999px;
+        margin-bottom: 24px;
+        text-transform: uppercase;
+    }
+    #landing-title {
+        font-family: 'Prompt', sans-serif;
+        font-size: clamp(2.6rem, 6vw, 4.4rem);
+        font-weight: 900;
+        line-height: 1.15;
+        color: var(--txt);
+        margin-bottom: 22px;
+        letter-spacing: -1px;
+    }
+    .title-line {
+        display: block;
+    }
+    .accent-green {
+        color: var(--green-bright);
+        text-shadow: 0 0 30px rgba(92, 186, 110, 0.35);
+    }
+    .badge-pill {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1.5px solid rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        color: #ffffff;
+        padding: 4px 28px;
+        border-radius: 999px;
+        margin-top: 6px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+    .landing-description {
+        font-size: clamp(1rem, 2vw, 1.18rem);
+        color: var(--txtdim);
+        margin: 0 auto 36px;
+        line-height: 1.7;
+        max-width: 580px;
+    }
+    .landing-cta-group {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    .landing-cta {
+        background: linear-gradient(135deg, #5cba6e 0%, #3e9450 100%);
+        color: #fff;
+        padding: 16px 36px;
+        border-radius: 999px;
+        font-size: 1.02rem;
+        font-weight: 700;
+        box-shadow: 0 8px 28px var(--green-glow);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .landing-cta:hover {
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 14px 36px rgba(92, 186, 110, 0.5);
+    }
+    .landing-cta:active {
+        transform: scale(0.97);
+    }
+    .landing-cta-sec {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--cborder-light);
+        color: var(--txt);
+        padding: 15px 28px;
+        border-radius: 999px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+        transition: all 0.25s;
+        cursor: pointer;
+    }
+    .landing-cta-sec:hover {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: var(--green);
+        transform: translateY(-2px);
+    }
+
+    /* ===== FLOATING CARDS ===== */
+    .float-card {
+        position: absolute;
+        background: var(--surface-glass);
+        border: 1px solid var(--cborder-light);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border-radius: 20px;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+        padding: 12px 14px;
+        animation: float 7s ease-in-out infinite;
+        z-index: 4;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        pointer-events: none;
+        transition: transform 0.3s;
+    }
+    .float-card-photo {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 10px;
+        width: 140px;
+    }
+    .float-card-photo .img-wrap {
+        width: 120px;
+        height: 85px;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 6px;
+    }
+    .float-card-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .float-card-photo span {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--txt);
+    }
+    .float-card-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 2px solid var(--amber);
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+    .float-card-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .float-card-info {
+        display: flex;
+        flex-direction: column;
+        text-align: left;
+    }
+    .float-card-info strong {
+        font-size: 0.84rem;
+        color: #fff;
+        font-weight: 700;
+    }
+    .float-card-info small {
+        font-size: 0.72rem;
+        color: var(--green-bright);
+        font-weight: 500;
+    }
+
+    /* Coordinated Responsive Positioning */
+    .fc-pos-left {
+        left: 2%;
+        top: 26%;
+        animation-delay: -2s;
+    }
+    .fc-pos-top-right {
+        right: 4%;
+        top: 14%;
+        animation-delay: 0s;
+    }
+    .fc-pos-right {
+        right: 2%;
+        bottom: 22%;
+        animation-delay: -4s;
+    }
+    .fc-pos-bottom-left {
+        left: 6%;
+        bottom: 12%;
+        animation-delay: -1.5s;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        50%      { transform: translateY(-14px) rotate(1.2deg); }
+    }
+
+    /* ===== LIVE TICKER ===== */
+    .landing-ticker {
+        position: relative;
+        z-index: 5;
+        background: rgba(92, 186, 110, 0.08);
+        border-top: 1px solid var(--cborder);
+        border-bottom: 1px solid var(--cborder);
+        padding: 16px 0;
+        margin: 40px 0 60px;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    .ticker-track {
+        display: inline-block;
+        white-space: nowrap;
+        animation: ticker 35s linear infinite;
+    }
+    .ticker-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 20px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--txt);
+        letter-spacing: 1px;
+    }
+    .ticker-dot {
+        color: var(--green-bright);
+        font-size: 0.8rem;
+    }
+    @keyframes ticker {
+        0%   { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+    }
+
+    /* ===== HOW IT WORKS SECTION ===== */
+    .landing-section {
+        position: relative;
+        z-index: 5;
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 40px 24px 60px;
+        width: 100%;
+    }
+    .section-head {
+        text-align: center;
+        margin-bottom: 44px;
+    }
+    .section-head h2 {
+        font-family: 'Prompt', sans-serif;
+        font-size: clamp(1.6rem, 3.5vw, 2.3rem);
+        font-weight: 800;
+        color: var(--txt);
+        margin-bottom: 10px;
+    }
+    .section-head p {
+        color: var(--txtdim);
+        font-size: 0.95rem;
+    }
+    .steps-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 22px;
+    }
+    .step-card {
+        background: var(--surface);
+        border: 1px solid var(--cborder);
+        border-radius: 24px;
+        padding: 30px 24px;
+        position: relative;
+        transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+    }
+    .step-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(92, 186, 110, 0.4);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+    }
+    .step-num {
+        position: absolute;
+        top: 20px;
+        right: 24px;
+        font-family: 'Prompt', sans-serif;
+        font-size: 2.2rem;
+        font-weight: 900;
+        color: rgba(255, 255, 255, 0.05);
+    }
+    .step-icon {
+        font-size: 2.2rem;
+        margin-bottom: 16px;
+        display: inline-block;
+    }
+    .step-card h3 {
+        font-family: 'Prompt', sans-serif;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--txt);
+        margin-bottom: 10px;
+    }
+    .step-card p {
+        font-size: 0.88rem;
+        color: var(--txtdim);
+        line-height: 1.6;
+    }
+
+    /* ===== CATEGORY PREVIEW GRID ===== */
+    .cat-preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+    }
+    .cat-card {
+        background: var(--surface2);
+        border: 1px solid var(--cborder);
+        border-radius: 20px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        cursor: pointer;
+        transition: all 0.25s;
+    }
+    .cat-card:hover {
+        background: rgba(92, 186, 110, 0.12);
+        border-color: var(--green);
+        transform: translateY(-3px);
+    }
+    .cat-icon-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.06);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+    .cat-info h4 {
+        font-family: 'Prompt', sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--txt);
+    }
+    .cat-info span {
+        font-size: 0.78rem;
+        color: var(--txtdim);
+    }
+
+    /* ===== LANDING FOOTER ===== */
+    .landing-footer {
+        text-align: center;
+        padding: 40px 24px 20px;
+        border-top: 1px solid var(--cborder);
+        color: var(--txtdim);
+        font-size: 0.85rem;
+        margin-top: 40px;
+    }
+    .landing-footer a {
+        color: var(--green-bright);
+        text-decoration: none;
+    }
+
+    /* ===== APP SCREENS (FEED & MY QUESTS) ===== */
+    .feed-header {
+        position: sticky;
+        top: 0;
+        background: rgba(18, 26, 20, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        z-index: 30;
+        border-bottom: 1px solid var(--cborder);
+    }
+    .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 24px;
+    }
+    .topbar-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .brand {
+        font-family: 'Prompt', sans-serif;
+        font-size: 1.25rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        cursor: pointer;
+    }
+    .brand .q { color: var(--green-bright); }
+    .avatar-wrap {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 2px solid var(--amber);
+        overflow: hidden;
+        cursor: pointer;
+        flex-shrink: 0;
+        box-shadow: 0 0 0 3px rgba(232, 184, 109, 0.15);
+        transition: transform 0.2s;
+    }
+    .avatar-wrap:hover { transform: scale(1.05); }
+    .avatar-wrap img { width: 100%; height: 100%; display: block; object-fit: cover; }
+    .greeting { font-family: 'Prompt', sans-serif; font-size: 0.95rem; font-weight: 600; }
+    .subtext { font-size: 0.78rem; color: var(--txtdim); margin-top: 1px; }
+    .icon-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 999px;
+        border: 1px solid var(--cborder);
+        background: rgba(255, 255, 255, 0.06);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--txt);
+        transition: all 0.2s;
+    }
+    .icon-btn:hover { background: rgba(92, 186, 110, 0.2); border-color: var(--green); }
+
+    /* Search & Chips */
+    .search-wrap { padding: 8px 24px 14px; max-width: 720px; }
+    .search-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--cborder);
+        border-radius: 999px;
+        padding: 10px 18px;
+        backdrop-filter: blur(12px);
+    }
+    .search-box input { flex: 1; background: none; border: none; color: var(--txt); font-size: 0.92rem; }
+    .search-box input::placeholder { color: var(--txtdim); }
+
+    .chips {
+        display: flex;
+        gap: 8px;
+        padding: 0 24px 16px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip {
+        padding: 7px 18px;
+        border-radius: 999px;
+        border: 1px solid var(--cborder);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--txtdim);
+        font-size: 0.84rem;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+    .chip.active {
+        background: var(--green);
+        border-color: var(--green);
+        color: #fff;
+        font-weight: 700;
+        box-shadow: 0 4px 14px var(--green-glow);
+    }
+
+    /* Feed Container & Cards */
+    .feed-scroll {
+        flex: 1;
+        width: 100%;
+        padding: 24px 24px calc(var(--navh) + 30px);
+    }
+    .feed {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+        width: 100%;
+    }
+
+    .card {
+        background: var(--card);
+        border-radius: 24px;
+        border: 1.5px solid var(--cardbdr);
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        cursor: pointer;
+        transition: transform 0.22s, box-shadow 0.22s, border-color 0.22s;
+        display: flex;
+        flex-direction: column;
+    }
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .card:active { transform: scale(0.98); }
+
+    .card-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .card-author { display: flex; align-items: center; gap: 8px; }
+    .auth-av { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--cardbdr); flex-shrink: 0; }
+    .auth-name { font-size: 0.85rem; color: var(--txtmed); font-weight: 600; }
+    .card-time { font-size: 0.75rem; color: #888; }
+
+    .cat-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 3px 12px;
+        border-radius: 999px;
+        margin-bottom: 10px;
+        align-self: flex-start;
+    }
+    .cat-academic { background: #eef3fe; color: #4a6fb5; }
+    .cat-coding   { background: #efe8fe; color: #7a52c8; }
+    .cat-skills   { background: #feeee8; color: #c86444; }
+    .cat-language { background: #e8f7ee; color: #3a8a56; }
+
+    .card-title {
+        font-family: 'Prompt', sans-serif;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--txtdk);
+        margin-bottom: 10px;
+        line-height: 1.35;
+    }
+    .ex-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--carddim);
+        border-radius: 16px;
+        padding: 10px 14px;
+        margin-bottom: 12px;
+        border: 1px solid var(--cardbdr);
+    }
+    .ex-label { font-size: 0.7rem; color: #888; text-transform: uppercase; font-weight: 700; margin-bottom: 2px; }
+    .ex-val { font-size: 0.9rem; font-weight: 700; color: var(--txtdk); }
+    .card-desc {
+        font-size: 0.86rem;
+        color: var(--txtmed);
+        margin-bottom: 16px;
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        flex: 1;
+    }
+    .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+    .dur-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--txtmed);
+        background: var(--carddim);
+        padding: 5px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--cardbdr);
+    }
+    .btn-accept {
+        background: var(--green);
+        color: #fff;
+        padding: 8px 20px;
+        border-radius: 999px;
+        font-size: 0.86rem;
+        font-weight: 700;
+        box-shadow: 0 4px 12px var(--green-glow);
+        transition: all 0.2s;
+    }
+    .btn-accept:hover { background: #4ca35e; }
+    .btn-accept:active { transform: scale(0.94); }
+    .btn-accept.done { background: var(--txtmed); box-shadow: none; }
+
+    /* Page Header */
+    .page-hdr { padding: 32px 24px 16px; }
+    .page-hdr h2 { font-family: 'Prompt', sans-serif; font-size: 1.6rem; font-weight: 800; }
+    .page-hdr p { font-size: 0.88rem; color: var(--txtdim); margin-top: 4px; }
+
+    /* Empty state */
+    .empty { display: flex; flex-direction: column; align-items: center; padding: 60px 20px; gap: 12px; text-align: center; color: var(--txtdim); grid-column: 1 / -1; }
+    .empty .ico { font-size: 3rem; }
+
+    /* ===== APPLICATION NAV BAR ===== */
+    .nav {
+        position: fixed;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 480px;
+        height: var(--navh);
+        background: rgba(18, 26, 20, 0.92);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid var(--cborder);
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        z-index: 100;
+        padding: 0 10px;
+    }
+    .nav-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        background: none;
+        border: none;
+        color: var(--txtdim);
+        font-size: 0.68rem;
+        height: 100%;
+        padding: 8px 0;
+        transition: color 0.2s;
+    }
+    .nav-btn svg { width: 22px; height: 22px; flex-shrink: 0; }
+    .nav-btn.active { color: var(--green-bright); font-weight: 700; }
+    .fab-btn {
+        flex: 0;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--green), #428e50);
+        color: #fff;
+        box-shadow: 0 6px 20px var(--green-glow);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 12px;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .fab-btn:hover { transform: scale(1.08); }
+    .fab-btn:active { transform: scale(0.92); }
+    .fab-btn svg { width: 22px; height: 22px; }
+
+    /* ===== OVERLAY & MODALS ===== */
+    .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0);
+        z-index: 200;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        transition: background 0.3s;
+    }
+    .overlay.open {
+        background: rgba(0, 0, 0, 0.65);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        pointer-events: auto;
+    }
+    .panel {
+        width: 100%;
+        max-width: 540px;
+        background: var(--surface);
+        border: 1px solid var(--cborder-light);
+        border-radius: 28px;
+        padding: 28px;
+        max-height: 90vh;
+        overflow-y: auto;
+        transform: translateY(40px) scale(0.96);
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+    .overlay.open .panel {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    .handle { display: none; }
+    .panel-title { font-family: 'Prompt', sans-serif; font-size: 1.25rem; font-weight: 700; margin-bottom: 20px; }
+
+    /* Forms */
+    .fg { margin-bottom: 16px; }
+    .fg label { display: block; font-size: 0.84rem; font-weight: 600; color: var(--txtdim); margin-bottom: 6px; }
+    .fg input, .fg textarea, .fg select {
+        width: 100%;
+        background: var(--surface2);
+        border: 1px solid var(--cborder);
+        border-radius: 16px;
+        padding: 12px 16px;
+        color: var(--txt);
+        font-size: 0.92rem;
+        transition: border-color 0.2s;
+    }
+    .fg input:focus, .fg textarea:focus, .fg select:focus { border-color: var(--green); }
+    .fg textarea { min-height: 85px; resize: none; }
+    .frow { display: flex; gap: 12px; }
+    .fhalf { flex: 1; }
+    .btn-post {
+        width: 100%;
+        background: linear-gradient(135deg, var(--green), #428e50);
+        color: #fff;
+        padding: 14px;
+        border-radius: 999px;
+        font-size: 1rem;
+        font-weight: 700;
+        box-shadow: 0 6px 20px var(--green-glow);
+        margin-top: 10px;
+        transition: transform 0.2s;
+    }
+    .btn-post:hover { transform: translateY(-2px); }
+
+    /* Detail Modal */
+    .det-title { font-family: 'Prompt', sans-serif; font-size: 1.35rem; font-weight: 700; color: var(--txt); margin-bottom: 8px; }
+    .det-auth { display: flex; align-items: center; gap: 8px; color: var(--txtdim); font-size: 0.85rem; margin-bottom: 18px; }
+    .det-auth img { width: 30px; height: 30px; border-radius: 50%; }
+    .det-exbox { background: var(--surface2); border-radius: 18px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--cborder); }
+    .det-exlabel { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--txtdim); letter-spacing: 0.5px; margin-bottom: 6px; }
+    .det-exval { font-size: 1.05rem; font-weight: 700; color: var(--green-bright); }
+    .det-desc { font-size: 0.92rem; color: var(--txtdim); line-height: 1.7; margin-bottom: 24px; }
+    .det-footer { display: flex; gap: 12px; }
+    .btn-close { flex: 1; padding: 13px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--cborder); color: var(--txt); font-size: 0.9rem; font-weight: 600; }
+    .btn-confirm { flex: 2; padding: 13px; border-radius: 999px; background: var(--green); border: none; color: #fff; font-size: 0.95rem; font-weight: 700; box-shadow: 0 6px 16px var(--green-glow); }
+
+    /* Profile Panel */
+    .profile-hero { display: flex; flex-direction: column; align-items: center; padding: 10px 0 16px; gap: 6px; }
+    .profile-av-wrap { position: relative; cursor: pointer; margin-bottom: 6px; }
+    .profile-av { width: 84px; height: 84px; border-radius: 50%; border: 3px solid var(--amber); box-shadow: 0 0 0 6px var(--amber-glow); object-fit: cover; display: block; }
+    .av-edit-badge { position: absolute; bottom: 2px; right: 2px; width: 26px; height: 26px; border-radius: 50%; background: var(--green); border: 2px solid var(--surface); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; }
+    .profile-hero h3 { font-family: 'Prompt', sans-serif; font-size: 1.2rem; font-weight: 700; }
+    .profile-hero p { color: var(--txtdim); font-size: 0.85rem; }
+    .stats { display: flex; gap: 12px; margin-top: 16px; width: 100%; }
+    .stat { flex: 1; background: var(--surface2); border-radius: 18px; padding: 14px 10px; text-align: center; border: 1px solid var(--cborder); }
+    .stat-n { display: block; font-family: 'Prompt', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--green-bright); }
+    .stat-l { display: block; font-size: 0.75rem; color: var(--txtdim); margin-top: 2px; }
+    .av-picker { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 12px 0 18px; }
+    .av-opt { width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--cborder); overflow: hidden; cursor: pointer; transition: all 0.2s; padding: 0; }
+    .av-opt img { width: 100%; height: 100%; display: block; }
+    .av-opt.selected { border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-glow); }
+    .btn-save { width: 100%; background: var(--green); color: #fff; padding: 13px; border-radius: 999px; font-size: 1rem; font-weight: 700; box-shadow: 0 6px 18px var(--green-glow); margin-top: 8px; }
+
+    /* ===== DESKTOP RESPONSIVE ENHANCEMENTS ===== */
+    @media (min-width: 768px) {
+        .nav {
+            top: 0;
+            bottom: auto;
+            max-width: 1200px;
+            height: var(--navh);
+            background: rgba(18, 26, 20, 0.94);
+            border-top: none;
+            border-bottom: 1px solid var(--cborder);
+            padding: 0 32px;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        .nav-btn {
+            flex: 0 0 auto;
+            flex-direction: row;
+            gap: 8px;
+            height: 44px;
+            padding: 0 18px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+        }
+        .nav-btn:hover { background: rgba(255, 255, 255, 0.08); color: var(--txt); }
+        .nav-btn.active { background: rgba(92, 186, 110, 0.16); color: var(--green-bright); }
+        .fab-btn {
+            flex: 0 0 auto;
+            width: auto;
+            height: 44px;
+            border-radius: 999px;
+            padding: 0 20px;
+            margin: 0 6px;
+            font-size: 0.85rem;
+            gap: 8px;
+        }
+        .fab-btn::after {
+            content: 'โพสต์งาน';
+            font-family: 'Sarabun', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+        .topbar { padding: 24px 32px 12px; }
+        .search-wrap { padding: 10px 32px 18px; }
+        .chips { padding: 0 32px 20px; }
+        .feed-scroll { padding: 20px 32px 60px; }
+        .page-hdr { padding: 32px 32px 16px; }
+    }
+
+    /* ===== CHAT SYSTEM UI ===== */
+    .chat-container {
+        display: flex;
+        width: 100%;
+        height: calc(100vh - var(--navh) - 20px);
+        max-height: 820px;
+        background: var(--surface);
+        border: 1px solid var(--cborder);
+        border-radius: 24px;
+        margin: 10px auto 20px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 16px 40px rgba(0,0,0,0.35);
+    }
+    .chat-sidebar {
+        width: 330px;
+        background: rgba(22, 34, 24, 0.96);
+        border-right: 1px solid var(--cborder);
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        z-index: 5;
+    }
+    .chat-inbox-header {
+        padding: 18px 20px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--cborder);
+    }
+    .chat-inbox-header h2 {
+        font-family: 'Prompt', sans-serif;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--txt);
+    }
+    .chat-search-wrap {
+        padding: 10px 16px;
+    }
+    .chat-search-box {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface2);
+        border: 1px solid var(--cborder);
+        border-radius: 999px;
+        padding: 8px 14px;
+    }
+    .chat-search-box input {
+        background: none;
+        border: none;
+        color: var(--txt);
+        font-size: 0.85rem;
+        width: 100%;
+    }
+    .chat-search-box input::placeholder { color: var(--txtdim); }
+    .chat-list {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+    .chat-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        cursor: pointer;
+        border-bottom: 1px solid rgba(255,255,255,0.03);
+        transition: background 0.2s;
+    }
+    .chat-item:hover {
+        background: rgba(255,255,255,0.04);
+    }
+    .chat-item.active {
+        background: rgba(92, 186, 110, 0.12);
+        border-left: 3.5px solid var(--green-bright);
+    }
+    .chat-av-wrap {
+        position: relative;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .chat-av-wrap img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .chat-online-dot {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 12px;
+        height: 12px;
+        background: var(--green-bright);
+        border: 2px solid var(--surface);
+        border-radius: 50%;
+    }
+    .chat-item-content {
+        flex: 1;
+        min-width: 0;
+    }
+    .chat-item-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 3px;
+    }
+    .chat-item-name {
+        font-family: 'Prompt', sans-serif;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--txt);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .chat-item-time {
+        font-size: 0.7rem;
+        color: var(--txtdim);
+    }
+    .chat-item-preview {
+        font-size: 0.78rem;
+        color: var(--txtdim);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .chat-badge {
+        background: var(--green);
+        color: #fff;
+        font-size: 0.65rem;
+        font-weight: 800;
+        padding: 1px 6px;
+        border-radius: 999px;
+    }
+
+    /* Active Chat Room View */
+    .chat-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg);
+        position: relative;
+        min-width: 0;
+        height: 100%;
+    }
+    .chat-main-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 18px;
+        background: rgba(22, 34, 24, 0.96);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--cborder);
+        z-index: 10;
+        flex-shrink: 0;
+    }
+    .chat-header-user {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .chat-back-btn {
+        display: none;
+        background: none;
+        border: none;
+        color: var(--txt);
+        padding: 6px;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+    .chat-header-info h3 {
+        font-family: 'Prompt', sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--txt);
+    }
+    .chat-header-info span {
+        font-size: 0.72rem;
+        color: var(--green-bright);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .chat-header-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    /* Quest Banner in Room */
+    .chat-quest-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(92, 186, 110, 0.08);
+        border-bottom: 1px solid rgba(92, 186, 110, 0.18);
+        padding: 7px 18px;
+        font-size: 0.78rem;
+        color: var(--txtdim);
+        flex-shrink: 0;
+    }
+    .chat-quest-banner strong {
+        color: var(--green-bright);
+    }
+
+    /* Message Timeline */
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 18px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .chat-date-divider {
+        text-align: center;
+        margin: 6px 0;
+    }
+    .chat-date-divider span {
+        background: var(--surface2);
+        border: 1px solid var(--cborder);
+        padding: 3px 12px;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        color: var(--txtdim);
+    }
+    .chat-sys-msg {
+        align-self: center;
+        max-width: 85%;
+        text-align: center;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--cborder);
+        padding: 7px 14px;
+        border-radius: 14px;
+        font-size: 0.75rem;
+        color: var(--txtdim);
+        margin: 4px 0;
+    }
+
+    /* Message Bubbles */
+    .chat-msg {
+        display: flex;
+        gap: 10px;
+        max-width: 75%;
+        animation: msgIn 0.22s ease-out;
+    }
+    @keyframes msgIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .chat-msg-in {
+        align-self: flex-start;
+    }
+    .chat-msg-out {
+        align-self: flex-end;
+        flex-direction: row-reverse;
+    }
+    .chat-msg-av {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .chat-msg-body {
+        display: flex;
+        flex-direction: column;
+    }
+    .chat-bubble {
+        padding: 9px 15px;
+        border-radius: 18px;
+        font-size: 0.88rem;
+        line-height: 1.45;
+        word-break: break-word;
+    }
+    .chat-msg-in .chat-bubble {
+        background: var(--surface2);
+        color: var(--txt);
+        border: 1px solid var(--cborder);
+        border-bottom-left-radius: 4px;
+    }
+    .chat-msg-out .chat-bubble {
+        background: linear-gradient(135deg, #5cba6e, #3d8c4f);
+        color: #ffffff;
+        border-bottom-right-radius: 4px;
+        box-shadow: 0 4px 14px var(--green-glow);
+    }
+    .chat-msg-meta {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.66rem;
+        color: var(--txtdim);
+        margin-top: 3px;
+    }
+    .chat-msg-out .chat-msg-meta {
+        justify-content: flex-end;
+    }
+    .chat-check {
+        color: var(--green-bright);
+        font-weight: 700;
+    }
+
+    /* Typing Indicator */
+    .chat-typing {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.75rem;
+        color: var(--txtdim);
+        padding: 6px 20px;
+    }
+    .chat-typing.active {
+        display: flex;
+    }
+    .typing-dots {
+        display: inline-flex;
+        gap: 4px;
+    }
+    .typing-dots span {
+        width: 5px;
+        height: 5px;
+        background: var(--green-bright);
+        border-radius: 50%;
+        animation: typingBounce 1.4s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce {
+        0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
+        30% { transform: translateY(-4px); opacity: 1; }
+    }
+
+    /* Input Bar & Suggestions */
+    .chat-quick-replies {
+        display: flex;
+        gap: 6px;
+        padding: 6px 16px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        background: rgba(22, 34, 24, 0.7);
+        border-top: 1px solid rgba(255,255,255,0.03);
+    }
+    .chat-quick-replies::-webkit-scrollbar { display: none; }
+    .quick-chip {
+        padding: 4px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--cborder);
+        background: rgba(255,255,255,0.05);
+        color: var(--txtdim);
+        font-size: 0.75rem;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .quick-chip:hover {
+        background: rgba(92, 186, 110, 0.15);
+        border-color: var(--green);
+        color: var(--txt);
+    }
+    .chat-input-bar {
+        padding: 10px 16px 14px;
+        background: rgba(22, 34, 24, 0.98);
+        border-top: 1px solid var(--cborder);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        z-index: 10;
+        flex-shrink: 0;
+    }
+    .chat-action-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--surface2);
+        border: 1px solid var(--cborder);
+        color: var(--txtdim);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .chat-action-btn:hover {
+        color: var(--txt);
+        border-color: var(--green);
+    }
+    .chat-input-wrap {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        background: var(--surface2);
+        border: 1.5px solid var(--cborder);
+        border-radius: 999px;
+        padding: 4px 16px;
+        transition: border-color 0.2s;
+    }
+    .chat-input-wrap:focus-within {
+        border-color: var(--green);
+    }
+    .chat-input-wrap input {
+        flex: 1;
+        background: none;
+        border: none;
+        color: var(--txt);
+        font-size: 0.9rem;
+        padding: 6px 0;
+    }
+    .chat-send-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--green);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px var(--green-glow);
+        cursor: pointer;
+        transition: transform 0.15s, background 0.15s;
+    }
+    .chat-send-btn:hover {
+        background: #4ca35e;
+        transform: scale(1.05);
+    }
+    .chat-send-btn:active {
+        transform: scale(0.92);
+    }
+
+    /* Small screens adjustments */
+    @media (max-width: 767px) {
+        .landing-nav { margin: 12px 12px 0; padding: 12px 18px; }
+        .landing-menu { display: none; }
+        .float-card-photo { display: none; }
+        .fc-pos-top-right { top: 2%; right: 2%; }
+        .fc-pos-bottom-left { bottom: 2%; left: 2%; }
+        .landing-stage { min-height: auto; padding: 40px 16px; }
+        .landing-ticker { margin: 20px 0 40px; }
+
+        .chat-container {
+            height: calc(100vh - var(--navh));
+            max-height: none;
+            margin: 0;
+            border-radius: 0;
+            border: none;
+        }
+        .chat-sidebar {
+            width: 100%;
+            position: absolute;
+            inset: 0;
+            z-index: 5;
+        }
+        .chat-sidebar.room-open {
+            transform: translateX(-100%);
+        }
+        .chat-back-btn {
+            display: flex;
+        }
+        .chat-msg {
+            max-width: 86%;
+        }
+    }
+    </style>
+</head>
+<body>
+
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<div id="app">
+
+    <!-- LANDING SCREEN -->
+    <section class="landing-screen screen active" id="landing-screen" aria-labelledby="landing-title">
+        <div class="landing-grid" aria-hidden="true"></div>
+        
+        <!-- Header -->
+        <header class="landing-nav">
+            <a class="landing-logo" href="#landing-screen" aria-label="Questifly home"><span>Q</span>uestifly</a>
+            <div class="landing-menu">
+                <a href="#how-it-works" class="landing-link">วิธีใช้งาน</a>
+                <a href="#categories" class="landing-link">หมวดหมู่</a>
+            </div>
+            <div class="landing-actions">
+                <button class="landing-signin" type="button" id="sign-in-btn">Sign In</button>
+                <button class="landing-signup" type="button" id="sign-up-btn">Sign Up ↗</button>
+            </div>
+        </header>
+
+        <!-- Hero Stage -->
+        <div class="landing-stage">
+            <!-- Floating badge 1: Left photo -->
+            <article class="float-card float-card-photo fc-pos-left" aria-hidden="true">
+                <div class="img-wrap">
+                    <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=300&q=80" alt="Coding">
+                </div>
+                <span>✨ Build together</span>
+            </article>
+
+            <!-- Floating badge 2: Top-right mentor -->
+            <article class="float-card fc-pos-top-right" aria-hidden="true">
+                <div class="float-card-avatar">
+                    <img src="https://api.dicebear.com/9.x/lorelei/svg?seed=Aria&backgroundColor=b6e3f4" alt="Aria">
+                </div>
+                <div class="float-card-info">
+                    <strong>Aria</strong>
+                    <small>UX Mentor • ⭐ 4.9</small>
+                </div>
+            </article>
+
+            <!-- Floating badge 3: Right photo -->
+            <article class="float-card float-card-photo fc-pos-right" aria-hidden="true">
+                <div class="img-wrap">
+                    <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=300&q=80" alt="Workshop">
+                </div>
+                <span>🚀 Share your skill</span>
+            </article>
+
+            <!-- Floating badge 4: Bottom-left learner -->
+            <article class="float-card fc-pos-bottom-left" aria-hidden="true">
+                <div class="float-card-avatar">
+                    <img src="https://api.dicebear.com/9.x/lorelei/svg?seed=Noah&backgroundColor=ffd5dc" alt="Noah">
+                </div>
+                <div class="float-card-info">
+                    <strong>Noah</strong>
+                    <small>Python Learner • 🌱 Active</small>
+                </div>
+            </article>
+
+            <!-- Center Content -->
+            <div class="landing-copy">
+                <p class="landing-kicker">✦ A SKILL-SWAPPING COMMUNITY ✦</p>
+                <h1 id="landing-title">
+                    <span class="title-line">Learners</span>
+                    <span class="title-line accent-green">Creators</span>
+                    <span class="title-line"><span class="badge-pill">Builders</span></span>
+                </h1>
+                <p class="landing-description">แลกเปลี่ยนความรู้และทักษะที่คุณมี กับสิ่งที่คุณอยากเรียนรู้<br>คนจริง สกิลจริง ไม่มีค่าใช้จ่าย 100%</p>
+                <div class="landing-cta-group">
+                    <button class="landing-cta" id="start-btn" type="button">
+                        <span>EXPLORE QUESTS</span>
+                        <span>→</span>
+                    </button>
+                    <button class="landing-cta-sec" id="hero-post-btn" type="button">✍️ โพสต์แลกเปลี่ยนทักษะ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Animated Live Ticker -->
+        <div class="landing-ticker" aria-hidden="true">
+            <div class="ticker-track">
+                <span class="ticker-item">💻 CODING <span class="ticker-dot">✦</span></span>
+                <span class="ticker-item">🎨 UI/UX DESIGN <span class="ticker-dot">✦</span></span>
+                <span class="ticker-item">📚 CALCULUS <span class="ticker-dot">✦</span></span>
+                <span class="ticker-item">🌏 LANGUAGES <span class="ticker-dot">✦</span></span>
+                <span class="ticker-item">☕ LATTE ART <span class="ticker-dot">✦</span></span>
+                <span class="ticker-item">🎸 GUITAR <span class="ticker-dot">✦</span></span>
+                <span class="ticker-item">🎬 VIDEO EDITING <span class="ticker-dot">✦</span></span>
+                <span class="ticker-item">💻 CODING <span class="ticker-dot">✦</span></span>
+                <span class="ticker-item">🎨 UI/UX DESIGN <span class="ticker-dot">✦</span></span>
+                <span class="ticker-item">📚 CALCULUS <span class="ticker-dot">✦</span></span>
+                <span class="ticker-item">🌏 LANGUAGES <span class="ticker-dot">✦</span></span>
+                <span class="ticker-item">☕ LATTE ART <span class="ticker-dot">✦</span></span>
+                <span class="ticker-item">🎸 GUITAR <span class="ticker-dot">✦</span></span>
+                <span class="ticker-item">🎬 VIDEO EDITING <span class="ticker-dot">✦</span></span>
+            </div>
+        </div>
+
+        <!-- How It Works Section -->
+        <section class="landing-section" id="how-it-works">
+            <div class="section-head">
+                <h2>วิธีเริ่มต้นใน 3 ขั้นตอน</h2>
+                <p>เรียนรู้ทักษะใหม่ๆ ได้ง่ายและฟรี โดยการแลกเปลี่ยนสิ่งที่คุณถนัด</p>
+            </div>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <span class="step-num">01</span>
+                    <span class="step-icon">✍️</span>
+                    <h3>โพสต์สิ่งที่คุณอยากเรียน</h3>
+                    <p>ระบุหัวข้อที่คุณต้องการคำแนะนำ พร้อมเสนอทักษะที่คุณพร้อมสอนเป็นการตอบแทน</p>
+                </div>
+                <div class="step-card">
+                    <span class="step-num">02</span>
+                    <span class="step-icon">🤝</span>
+                    <h3>จับคู่แลกเปลี่ยน</h3>
+                    <p>เลือกรับคำขอจากผู้ที่สนใจ หรือค้นหางานที่คุณช่วยสอนได้ในชุมชน</p>
+                </div>
+                <div class="step-card">
+                    <span class="step-num">03</span>
+                    <span class="step-icon">🚀</span>
+                    <h3>เติบโตไปด้วยกัน</h3>
+                    <p>นัดหมายเวลาและแลกเปลี่ยนความรู้แบบ 1:1 พัฒนาทักษะใหม่ไปพร้อมมิตรภาพ</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Popular Categories Section -->
+        <section class="landing-section" id="categories" style="padding-top: 10px;">
+            <div class="section-head">
+                <h2>หมวดหมู่ยอดนิยม</h2>
+                <p>เลือกสำรวจทักษะตามหมวดหมู่ที่คุณสนใจได้ทันที</p>
+            </div>
+            <div class="cat-preview-grid">
+                <div class="cat-card" data-cat="coding">
+                    <div class="cat-icon-box">💻</div>
+                    <div class="cat-info">
+                        <h4>โค้ดดิ้ง & เทค</h4>
+                        <span>Python, Web, React</span>
+                    </div>
+                </div>
+                <div class="cat-card" data-cat="language">
+                    <div class="cat-icon-box">🌏</div>
+                    <div class="cat-info">
+                        <h4>ภาษาต่างประเทศ</h4>
+                        <span>English, Japanese, Chinese</span>
+                    </div>
+                </div>
+                <div class="cat-card" data-cat="skills">
+                    <div class="cat-icon-box">🎨</div>
+                    <div class="cat-info">
+                        <h4>ทักษะสร้างสรรค์</h4>
+                        <span>Design, Art, Music, Video</span>
+                    </div>
+                </div>
+                <div class="cat-card" data-cat="academic">
+                    <div class="cat-icon-box">📚</div>
+                    <div class="cat-info">
+                        <h4>วิชาการ & สอบ</h4>
+                        <span>Math, Science, IELTS</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="landing-footer">
+            <p>© 2026 <strong>Questifly</strong> — แพลตฟอร์มแลกเปลี่ยนความรู้ของคนรุ่นใหม่ 💚</p>
+        </footer>
+    </section>
+
+    <!-- FEED SCREEN -->
+    <div class="screen" id="home-screen">
+        <div class="feed-header">
+            <div class="topbar">
+                <div class="topbar-left">
+                    <div class="avatar-wrap" id="open-profile">
+                        <img id="user-av" width="44" height="44" src="https://api.dicebear.com/7.x/lorelei/svg?seed=Pim&backgroundColor=c0aede" alt="User avatar">
+                    </div>
+                    <div>
+                        <p class="greeting">สวัสดี, นักสำรวจ! 👋</p>
+                        <p class="subtext">มีอะไรอยากเรียนวันนี้?</p>
+                    </div>
+                </div>
+                <span class="brand" id="brand-home"><span class="q">Q</span>uestifly</span>
+                <button class="icon-btn" id="open-post" aria-label="โพสต์งาน">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
+            </div>
+            <div class="search-wrap">
+                <div class="search-box">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8fa090" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="search-in" placeholder="ค้นหาความรู้ที่ต้องการ เช่น Python, กีตาร์...">
+                </div>
+            </div>
+            <div class="chips">
+                <button class="chip active" data-cat="all">✨ ทั้งหมด</button>
+                <button class="chip" data-cat="academic">📚 วิชาการ</button>
+                <button class="chip" data-cat="coding">💻 โค้ดดิ้ง</button>
+                <button class="chip" data-cat="skills">🎨 ทักษะ</button>
+                <button class="chip" data-cat="language">🌏 ภาษา</button>
+            </div>
+        </div>
+        
+        <div class="feed-scroll">
+            <div class="feed" id="feed-list"></div>
+        </div>
+    </div>
+
+    <!-- MY QUESTS SCREEN -->
+    <div class="screen" id="scr-mine">
+        <div class="page-hdr">
+            <h2>📋 งานของฉัน</h2>
+            <p>การแลกเปลี่ยนที่คุณส่งคำขอเข้าร่วม</p>
+        </div>
+        <div class="feed-scroll" style="padding-top: 0;">
+            <div class="feed" id="mine-list">
+                <div class="empty"><span class="ico">🌱</span><p>ยังไม่มีการแลกเปลี่ยนเลยน้า</p><p style="font-size:.84rem">กลับไปหน้าหลักแล้วเลือกงานที่สนใจได้เลยครับ</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHAT SCREEN -->
+    <div class="screen" id="scr-chat">
+        <div class="chat-container">
+            <!-- Sidebar / Conversation Inbox List -->
+            <aside class="chat-sidebar" id="chat-sidebar">
+                <div class="chat-inbox-header">
+                    <h2>💬 ข้อความแชท</h2>
+                    <span style="font-size:0.8rem;color:var(--green-bright);font-weight:600;" id="chat-active-count">3 บทสนทนา</span>
+                </div>
+                <div class="chat-search-wrap">
+                    <div class="chat-search-box">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8fa090" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="chat-search-in" placeholder="ค้นหาเพื่อนหรือวิชาที่คุย...">
+                    </div>
+                </div>
+                <div class="chat-list" id="chat-conversation-list">
+                    <!-- Dynamic chat conversation items -->
+                </div>
+            </aside>
+
+            <!-- Active Chat Room Main -->
+            <main class="chat-main" id="chat-room">
+                <!-- Chat Room Top Header -->
+                <header class="chat-main-header">
+                    <div class="chat-header-user">
+                        <button class="chat-back-btn" id="chat-back-to-list" aria-label="ย้อนกลับ">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                        </button>
+                        <div class="chat-av-wrap" style="width:38px;height:38px;">
+                            <img id="chat-active-av" src="https://api.dicebear.com/7.x/lorelei/svg?seed=Sarocha" alt="Partner">
+                            <div class="chat-online-dot"></div>
+                        </div>
+                        <div class="chat-header-info">
+                            <h3 id="chat-active-name">สโรชา</h3>
+                            <span><span style="font-size:8px;">🟢</span> กำลังออนไลน์</span>
+                        </div>
+                    </div>
+                    <div class="chat-header-actions">
+                        <button class="chat-action-btn" title="แลกเปลี่ยนสำเร็จ" id="chat-complete-btn">
+                            🤝
+                        </button>
+                        <button class="chat-action-btn" title="ข้อมูลเพิ่มเติม" id="chat-info-btn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Current Quest Context Banner -->
+                <div class="chat-quest-banner" id="chat-quest-banner">
+                    <div>
+                        <span>🤝 หัวข้อแลกเปลี่ยน: </span>
+                        <strong id="chat-quest-title">สอนพื้นฐาน Python ⇄ สอน Graphic Design</strong>
+                    </div>
+                    <small id="chat-quest-dur" style="color:var(--txtdim);">⏱️ 45 นาที</small>
+                </div>
+
+                <!-- Messages Timeline -->
+                <div class="chat-messages" id="chat-messages-wrap">
+                    <!-- Dynamic Messages -->
+                </div>
+
+                <!-- Typing indicator -->
+                <div class="chat-typing" id="chat-typing-indicator">
+                    <span id="typing-partner-name">สโรชา</span> กำลังพิมพ์
+                    <div class="typing-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+
+                <!-- Quick Replies Suggestions -->
+                <div class="chat-quick-replies" id="chat-quick-replies">
+                    <button class="quick-chip" data-text="สะดวกเริ่มคุยช่วงเวลาไหนดีครับ? 👋">👋 สะดวกกี่โมงดีครับ?</button>
+                    <button class="quick-chip" data-text="ยินดีที่ได้แลกเปลี่ยนความรู้ด้วยกันครับ! 🚀">🚀 ยินดีที่ได้แลกเปลี่ยนกัน</button>
+                    <button class="quick-chip" data-text="ส่งลิงก์ห้องประชุม (Google Meet/Discord) ให้หน่อยได้ไหมครับ 💻">💻 ส่งลิงก์ Meet ได้เลย</button>
+                    <button class="quick-chip" data-text="มีหัวข้อตรงไหนที่อยากให้เน้นเป็นพิเศษไหมครับ? ✍️">✍️ มีตรงไหนอยากเน้นเป็นพิเศษ</button>
+                </div>
+
+                <!-- Message Input Footer -->
+                <footer class="chat-input-bar">
+                    <button class="chat-action-btn" id="chat-emoji-btn" title="ใส่อีโมจิ">😊</button>
+                    <button class="chat-action-btn" id="chat-attach-btn" title="แนบไฟล์หรือลิงก์">📎</button>
+                    <div class="chat-input-wrap">
+                        <input type="text" id="chat-msg-input" placeholder="พิมพ์ข้อความที่นี่... (กด Enter เพื่อส่ง)" autocomplete="off">
+                    </div>
+                    <button class="chat-send-btn" id="chat-send-btn" title="ส่งข้อความ">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
+                </footer>
+            </main>
+        </div>
+    </div>
+
+    <!-- APP NAV BAR -->
+    <nav class="nav">
+        <button class="nav-btn active" data-scr="feed" aria-label="หน้าหลัก">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span>หน้าหลัก</span>
+        </button>
+        <button class="nav-btn" data-scr="mine" aria-label="งานของฉัน">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span>งานของฉัน</span>
+        </button>
+        <button class="fab-btn" id="fab" aria-label="โพสต์">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button class="nav-btn" data-scr="chat" id="chat-btn" aria-label="แชท">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>แชท</span>
+        </button>
+        <button class="nav-btn" id="profile-btn" aria-label="โปรไฟล์">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>โปรไฟล์</span>
+        </button>
+    </nav>
+
+    <!-- POST PANEL -->
+    <div class="overlay" id="post-ov">
+        <div class="panel" id="post-panel">
+            <div class="handle"></div>
+            <p class="panel-title">✍️ โพสต์งานแลกเปลี่ยน</p>
+            <div class="fg"><label>ฉันต้องการเรียน</label><input type="text" id="f-want" placeholder="เช่น Python พื้นฐาน, Calculus 1, ทำกาแฟ..."></div>
+            <div class="fg"><label>สิ่งที่ฉันนำมาแลก</label><input type="text" id="f-offer" placeholder="เช่น Graphic Design, สอนเล่นกีตาร์, ภาษาสเปน..."></div>
+            <div class="fg"><label>รายละเอียดเพิ่มเติม</label><textarea id="f-desc" placeholder="บอกเล่าเป้าหมายหรือเนื้อหาที่อยากแลกเปลี่ยน..."></textarea></div>
+            <div class="frow">
+                <div class="fg fhalf"><label>หมวดหมู่</label>
+                    <select id="f-cat"><option value="academic">📚 วิชาการ</option><option value="coding">💻 โค้ดดิ้ง</option><option value="skills">🎨 ทักษะ</option><option value="language">🌏 ภาษา</option></select>
+                </div>
+                <div class="fg fhalf"><label>ระยะเวลา</label>
+                    <select id="f-dur"><option>15 นาที</option><option>30 นาที</option><option>45 นาที</option><option>1 ชั่วโมง</option><option>1.5 ชั่วโมง</option></select>
+                </div>
+            </div>
+            <button class="btn-post" id="post-submit">🚀 โพสต์งาน</button>
+        </div>
+    </div>
+
+    <!-- DETAIL PANEL -->
+    <div class="overlay" id="det-ov">
+        <div class="panel" id="det-panel">
+            <div class="handle"></div>
+            <div id="det-content"></div>
+        </div>
+    </div>
+
+    <!-- PROFILE PANEL -->
+    <div class="overlay" id="prof-ov">
+        <div class="panel" id="prof-panel">
+            <div class="handle"></div>
+            <p class="panel-title">👤 โปรไฟล์ของฉัน</p>
+            <div class="profile-hero">
+                <div class="profile-av-wrap" id="prof-av-btn" title="เปลี่ยนรูป">
+                    <img class="profile-av" id="prof-av" width="84" height="84" src="https://api.dicebear.com/7.x/lorelei/svg?seed=Pim&backgroundColor=c0aede" alt="User profile">
+                    <div class="av-edit-badge">✏️</div>
+                </div>
+                <h3 id="prof-name-disp">นักสำรวจความรู้</h3>
+                <p id="prof-handle">@explorer</p>
+            </div>
+            <div class="stats">
+                <div class="stat"><span class="stat-n" id="s-post">0</span><span class="stat-l">โพสต์</span></div>
+                <div class="stat"><span class="stat-n" id="s-acc">0</span><span class="stat-l">แลกแล้ว</span></div>
+                <div class="stat"><span class="stat-n">0</span><span class="stat-l">ชม. เรียน</span></div>
+            </div>
+            <div class="fg" style="margin-top:20px">
+                <label>ชื่อที่แสดง</label>
+                <input type="text" id="prof-name-in" placeholder="ชื่อของคุณ" value="นักสำรวจความรู้" maxlength="30">
+            </div>
+            <div class="fg">
+                <label>เลือกรูปโปรไฟล์</label>
+                <div class="av-picker" id="av-picker"></div>
+            </div>
+            <button class="btn-save" id="prof-save">💾 บันทึก</button>
+        </div>
+    </div>
+
+</div>
+
+
+<script type="module">
+import { initializeApp }                          from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { getFirestore, collection, addDoc,
+         onSnapshot, query, orderBy,
+         serverTimestamp, getDocs }               from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+// ---- FIREBASE CONFIG ----
+const app = initializeApp({
+    apiKey:            "AIzaSyDANsolmUYJjoM3hSj-jgef8inMaT1I19w",
+    authDomain:        "pppp-d9289.firebaseapp.com",
+    projectId:         "pppp-d9289",
+    storageBucket:     "pppp-d9289.firebasestorage.app",
+    messagingSenderId: "1008656336853",
+    appId:             "1:1008656336853:web:c3022ecc9c29d6c9d0df5c"
+});
+const db          = getFirestore(app);
+const questsRef   = collection(db, 'quests');
+
+// ---- SEED DATA (used only if Firestore collection is empty) ----
+const SEED_QUESTS = [
+    { want:'สอนพื้นฐาน Python', offer:'สอน Graphic Design เบื้องต้น', desc:'กำลังหัดเขียนโค้ดอยู่ครับ ติดเรื่อง Loop และ Dictionary พอมีเวลาช่วยได้ไหมครับ ผมจะสอนใช้ Photoshop ให้เป็นการแลกเปลี่ยน', category:'coding',    duration:'45 นาที',   author:'สโรชา',  seed:'Sarocha' },
+    { want:'ติว Calculus 1',             offer:'สอนจับคอร์ดกีตาร์ 4 คอร์ดแรก',   desc:'ตาย... integration by parts ไม่ผ่านเลยค่ะ 😂 ใครว่างมาช่วยก่อน midterm บ้าง แลกกับสอนกีตาร์เบสิคนะคะ',                             category:'academic',  duration:'30 นาที',   author:'มินณิดา', seed:'Minnida' },
+    { want:'คุยภาษาอังกฤษแบบ Native',    offer:'สอนภาษาสเปนพื้นฐาน',             desc:'ขอเพื่อนคุยภาษาอังกฤษแบบไม่เกร็งครับ มาฝึกสนทนากัน แลกกับผมสอนภาษาสเปนง่ายๆ ตั้งแต่เบสิค',                                  category:'language',  duration:'1 ชั่วโมง', author:'คาร์ลอส', seed:'Carlos'  },
+    { want:'ฝึกวาด Procreate สไตล์ Cozy',offer:'อธิบาย React Hooks อย่างละเอียด',desc:'ผมสอนโค้ด React ได้ดี แต่อยากหัดวาดรูป Cozy Illustration บ้างครับ ใครถนัดวาดรูปมาแลกกันได้เลย!',                              category:'skills',    duration:'1.5 ชั่วโมง',author:'อเล็กซ์', seed:'Alex'    },
+    { want:'ฝึก IELTS Speaking Part 2',  offer:'ช่วยตรวจและแก้ไข Essay',          desc:'กำลังเตรียมสอบอยู่ค่ะ อยากหาคู่ซ้อมพูดแบบไม่กดดัน เดี๋ยวช่วยตรวจ Essay และ feedback ภาษาอังกฤษให้ด้วยนะคะ',               category:'language',  duration:'40 นาที',   author:'เจน',    seed:'Jane'    },
+    { want:'เรียนทำ Latte Art',           offer:'สอนตัดต่อวิดีโอ CapCut',          desc:'ทำกาแฟที่บ้านบ่อยมาก อยากเรียนวิธีทำ Latte Art ง่ายๆ แลกกับสอนตัดต่อคลิปสั้นๆ ใน CapCut นะจ๊ะ',                           category:'skills',    duration:'30 นาที',   author:'นิก',    seed:'Nick'    },
+];
+
+// ---- CONSTANTS ----
+const CATS     = { academic:{label:'วิชาการ',emoji:'📚',cls:'cat-academic'}, coding:{label:'โค้ดดิ้ง',emoji:'💻',cls:'cat-coding'}, skills:{label:'ทักษะ',emoji:'🎨',cls:'cat-skills'}, language:{label:'ภาษา',emoji:'🌏',cls:'cat-language'} };
+const AV_SEEDS = ['Pim','Sky','Luna','Mika','Ryo','Ava','Leo','Zoe','Max','Kai','Nara','Beau','Iris','Sol','Finn'];
+
+// ---- STATE ----
+let state = { quests:[], filter:'all', search:'', accepted:new Set(), posted:0 };
+let selectedSeed = 'Pim';
+
+// ---- HELPERS ----
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+function avURL(seed) { return `https://api.dicebear.com/7.x/lorelei/svg?seed=${seed}&backgroundColor=c0aede,b6e3f4,d1d4f9,ffd5dc`; }
+function catPill(cat) { const c=CATS[cat]||{label:cat,emoji:'🔖',cls:''}; return `<span class="cat-pill ${c.cls}">${c.emoji} ${c.label}</span>`; }
+function durTag(d)  { return `<span class="dur-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${d}</span>`; }
+function timeAgo(ts) {
+    if (!ts) return 'เพิ่งโพสต์';
+    const diff = (Date.now() - ts.toDate().getTime()) / 1000;
+    if (diff < 60)    return 'เพิ่งโพสต์';
+    if (diff < 3600)  return `${Math.floor(diff/60)} นาทีที่แล้ว`;
+    if (diff < 86400) return `${Math.floor(diff/3600)} ชม. ที่แล้ว`;
+    return `${Math.floor(diff/86400)} วันที่แล้ว`;
+}
+
+// ---- PROFILE ----
+function buildAvPicker() {
+    const picker = $('#av-picker');
+    if (!picker) return;
+    picker.innerHTML = AV_SEEDS.map(s => `
+        <button class="av-opt ${s===selectedSeed?'selected':''}" data-seed="${s}" title="${s}" type="button">
+            <img width="52" height="52" src="https://api.dicebear.com/7.x/lorelei/svg?seed=${s}&backgroundColor=c0aede,b6e3f4,d1d4f9,ffd5dc,ffdfbf" alt="${s}">
+        </button>`).join('');
+    picker.querySelectorAll('.av-opt').forEach(btn => btn.addEventListener('click', () => {
+        selectedSeed = btn.dataset.seed;
+        picker.querySelectorAll('.av-opt').forEach(b=>b.classList.remove('selected'));
+        btn.classList.add('selected');
+        $('#prof-av').src = avURL(selectedSeed);
+    }));
+}
+function syncProfile(profile) {
+    $('#user-av').src = avURL(profile.seed);
+    $('.greeting').textContent = `สวัสดี, ${profile.name}! 👋`;
+    $('#prof-name-disp').textContent = profile.name;
+    $('#prof-av').src = avURL(profile.seed);
+}
+
+// ---- CHAT STATE & SEED CONVERSATIONS ----
+let chatState = {
+    activePartnerId: 'Sarocha',
+    conversations: [
+        {
+            id: 'Sarocha',
+            partner: 'สโรชา',
+            seed: 'Sarocha',
+            questTitle: 'สอนพื้นฐาน Python ⇄ สอน Graphic Design',
+            duration: '45 นาที',
+            unread: 1,
+            lastTime: '10:42',
+            messages: [
+                { sender: 'them', text: 'สวัสดีค่ะ! เห็นว่าอยากเรียน Python พื้นฐาน ยินดีช่วยสอนให้นะคะ 😊', time: '10:38' },
+                { sender: 'me', text: 'สวัสดีครับสโรชา! ขอบคุณมากๆ เลยครับ ผมติดเรื่อง Loop กับ Dictionary พอดีเลย', time: '10:40' },
+                { sender: 'them', text: 'ได้เลยค่ะ เดี๋ยวเตรียมตัวอย่างเข้าใจง่ายๆ ให้ แลกกับสอน Photoshop เบื้องต้นนะคะ สะดวกคุยผ่าน Meet วันไหนดีคะ?', time: '10:42' }
+            ]
+        },
+        {
+            id: 'Minnida',
+            partner: 'มินณิดา',
+            seed: 'Minnida',
+            questTitle: 'ติว Calculus 1 ⇄ สอนจับคอร์ดกีตาร์',
+            duration: '30 นาที',
+            unread: 0,
+            lastTime: 'เมื่อวาน',
+            messages: [
+                { sender: 'me', text: 'สวัสดีครับมินณิดา สนใจแลกเปลี่ยนติวแคลคูลัส 1 กับสอนกีตาร์ครับ', time: 'เมื่อวาน' },
+                { sender: 'them', text: 'ยินดีมากเลยค่าา ช่วยชีวิตแคลคูลัสเค้าที 5555 😂🎸', time: 'เมื่อวาน' }
+            ]
+        },
+        {
+            id: 'Carlos',
+            partner: 'คาร์ลอส',
+            seed: 'Carlos',
+            questTitle: 'คุยภาษาอังกฤษ Native ⇄ สอนภาษาสเปน',
+            duration: '1 ชั่วโมง',
+            unread: 0,
+            lastTime: '2 วันที่แล้ว',
+            messages: [
+                { sender: 'them', text: '¡Hola! Let me know when you want to start our English-Spanish conversation exchange! 🇪🇸🇬🇧', time: '2 วันที่แล้ว' }
+            ]
+        }
+    ]
+};
+
+// Auto replies pool based on partner
+const PARTNER_REPLIES = [
+    "ยินดีมากๆ เลยค่ะ! สะดวกเริ่มโทรคุยผ่าน Discord หรือ Google Meet ดีคะ? 😊",
+    "ข้อนี้เข้าใจง่ายมากๆ เดี๋ยวเราแชร์ชีทสรุปและตัวอย่างให้ดูตอนเริ่มคุยนะ 💻✨",
+    "ได้เลยครับ! เดี๋ยวเตรียมนัดเวลาที่สะดวกตรงกันนะครับ 🚀",
+    "ขอบคุณมากๆ ครับที่มาแลกเปลี่ยนความรู้ด้วยกัน มีอะไรสงสัยถามทิ้งไว้ได้ตลอดเลยนะ!",
+    "โอเคเลยค่ะ! เดี๋ยวเจอกันตามเวลานัดน้าา ตื่นเต้นมากที่จะได้เรียนรู้ทักษะใหม่ด้วยกัน 🎉"
+];
+
+// Format current time HH:MM
+function getChatTime() {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+}
+
+// ---- CHAT FUNCTIONS ----
+function renderChatList(searchQuery = '') {
+    const list = $('#chat-conversation-list');
+    if (!list) return;
+
+    const filtered = chatState.conversations.filter(c => {
+        if (!searchQuery) return true;
+        const q = searchQuery.toLowerCase();
+        return c.partner.toLowerCase().includes(q) || c.questTitle.toLowerCase().includes(q);
+    });
+
+    $('#chat-active-count').textContent = `${chatState.conversations.length} บทสนทนา`;
+
+    if (!filtered.length) {
+        list.innerHTML = `<div class="empty" style="padding:40px 10px;"><span class="ico">🔍</span><p style="font-size:0.85rem">ไม่พบบทสนทนา</p></div>`;
+        return;
+    }
+
+    list.innerHTML = filtered.map(c => {
+        const lastMsg = c.messages[c.messages.length - 1];
+        const lastText = lastMsg ? (lastMsg.sender === 'me' ? `คุณ: ${lastMsg.text}` : lastMsg.text) : 'เริ่มการสนทนา';
+        const isActive = c.id === chatState.activePartnerId;
+
+        return `
+        <div class="chat-item ${isActive ? 'active' : ''}" data-id="${c.id}">
+            <div class="chat-av-wrap">
+                <img src="${avURL(c.seed)}" alt="${c.partner}">
+                <div class="chat-online-dot"></div>
+            </div>
+            <div class="chat-item-content">
+                <div class="chat-item-top">
+                    <h4 class="chat-item-name">${c.partner}</h4>
+                    <span class="chat-item-time">${c.lastTime}</span>
+                </div>
+                <div class="chat-item-preview">
+                    <span>${lastText}</span>
+                    ${c.unread ? `<span class="chat-badge">${c.unread}</span>` : ''}
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+
+    $$('.chat-item', list).forEach(item => {
+        item.addEventListener('click', () => {
+            selectConversation(item.dataset.id);
+        });
+    });
+}
+
+function selectConversation(partnerId) {
+    chatState.activePartnerId = partnerId;
+    const conv = chatState.conversations.find(c => c.id === partnerId);
+    if (conv) conv.unread = 0;
+
+    renderChatList($('#chat-search-in')?.value || '');
+    renderMessages();
+
+    // Mobile UX: slide into room
+    $('#chat-sidebar')?.classList.add('room-open');
+}
+
+function renderMessages() {
+    const conv = chatState.conversations.find(c => c.id === chatState.activePartnerId);
+    if (!conv) return;
+
+    // Header info
+    $('#chat-active-name').textContent = conv.partner;
+    $('#chat-active-av').src = avURL(conv.seed);
+    $('#typing-partner-name').textContent = conv.partner;
+    $('#chat-quest-title').textContent = conv.questTitle;
+    $('#chat-quest-dur').textContent = `⏱️ ${conv.duration}`;
+
+    const wrap = $('#chat-messages-wrap');
+    if (!wrap) return;
+
+    let html = `
+    <div class="chat-date-divider"><span>วันนี้</span></div>
+    <div class="chat-sys-msg">🎉 คุณและ <strong>${conv.partner}</strong> ได้เชื่อมต่อกันสำหรับ <strong>${conv.questTitle}</strong></div>
+    `;
+
+    html += conv.messages.map(m => {
+        if (m.sender === 'me') {
+            return `
+            <div class="chat-msg chat-msg-out">
+                <div class="chat-msg-body">
+                    <div class="chat-bubble">${m.text}</div>
+                    <div class="chat-msg-meta">
+                        <span>${m.time}</span>
+                        <span class="chat-check">✓✓</span>
+                    </div>
+                </div>
+            </div>`;
+        } else {
+            return `
+            <div class="chat-msg chat-msg-in">
+                <img class="chat-msg-av" src="${avURL(conv.seed)}" alt="${conv.partner}">
+                <div class="chat-msg-body">
+                    <div class="chat-bubble">${m.text}</div>
+                    <div class="chat-msg-meta">
+                        <span>${m.time}</span>
+                    </div>
+                </div>
+            </div>`;
+        }
+    }).join('');
+
+    wrap.innerHTML = html;
+    wrap.scrollTop = wrap.scrollHeight;
+}
+
+function sendChatMessage(text) {
+    const cleanText = (text || '').trim();
+    if (!cleanText) return;
+
+    const conv = chatState.conversations.find(c => c.id === chatState.activePartnerId);
+    if (!conv) return;
+
+    const time = getChatTime();
+    conv.messages.push({ sender: 'me', text: cleanText, time });
+    conv.lastTime = time;
+
+    // Clear input
+    const input = $('#chat-msg-input');
+    if (input) input.value = '';
+
+    renderMessages();
+    renderChatList($('#chat-search-in')?.value || '');
+
+    // Trigger realistic typing indicator & auto-reply
+    const typing = $('#chat-typing-indicator');
+    if (typing) {
+        setTimeout(() => {
+            typing.classList.add('active');
+            const wrap = $('#chat-messages-wrap');
+            if (wrap) wrap.scrollTop = wrap.scrollHeight;
+        }, 400);
+
+        setTimeout(() => {
+            typing.classList.remove('active');
+            const randomReply = PARTNER_REPLIES[Math.floor(Math.random() * PARTNER_REPLIES.length)];
+            const replyTime = getChatTime();
+            conv.messages.push({ sender: 'them', text: randomReply, time: replyTime });
+            conv.lastTime = replyTime;
+            renderMessages();
+            renderChatList($('#chat-search-in')?.value || '');
+        }, 1600);
+    }
+}
+
+function startChatWith(partnerName, questTitle, seed = 'Pim', duration = '30 นาที') {
+    let existing = chatState.conversations.find(c => c.partner === partnerName);
+    if (!existing) {
+        existing = {
+            id: seed || partnerName,
+            partner: partnerName,
+            seed: seed || 'Pim',
+            questTitle: questTitle || 'การแลกเปลี่ยนความรู้ใหม่',
+            duration: duration || '30 นาที',
+            unread: 0,
+            lastTime: getChatTime(),
+            messages: [
+                { sender: 'them', text: `สวัสดีครับ! สนใจแลกเปลี่ยนหัวข้อ "${questTitle}" ด้วยกันครับ ทักทายมาคุยรายละเอียดกันได้เลยนะครับ 😊`, time: getChatTime() }
+            ]
+        };
+        chatState.conversations.unshift(existing);
+    }
+    chatState.activePartnerId = existing.id;
+    goScreen('chat');
+    renderChatList();
+    renderMessages();
+    $('#chat-sidebar')?.classList.add('room-open');
+    setTimeout(() => $('#chat-msg-input')?.focus(), 300);
+}
+
+// ---- ACCEPT ----
+function accept(id, btn) {
+    if (state.accepted.has(id)) return;
+    state.accepted.add(id);
+    $('#s-acc').textContent = state.accepted.size;
+    btn.textContent = '✓ ส่งคำขอแล้ว';
+    btn.classList.add('done');
+    btn.disabled = true;
+    btn.closest('.card').style.borderColor = '#5cba6e';
+
+    const q = state.quests.find(x => x.id === id);
+    if (q) {
+        startChatWith(q.author, `${q.want} ⇄ ${q.offer}`, q.seed, q.duration);
+    }
+}
+
+// ---- DETAIL PANEL ----
+function openDetail(id) {
+    const q = state.quests.find(x=>x.id===id);
+    if (!q) return;
+    const done = state.accepted.has(id);
+    $('#det-content').innerHTML = `
+<div class="det-auth">
+  <img width="28" height="28" src="${avURL(q.seed)}" alt="${q.author}">
+  <span>${q.author} • ${q.time}</span>
+  ${catPill(q.category)}
+</div>
+<h2 class="det-title">${q.want}</h2>
+<div class="det-exbox">
+  <p class="det-exlabel">สิ่งที่ได้รับกลับมา 🤝</p>
+  <p class="det-exval">${q.offer}</p>
+</div>
+<p class="det-desc">${q.desc}</p>
+<div style="margin-bottom:20px">${durTag(q.duration)}</div>
+<div class="det-footer">
+  <button class="btn-close" id="det-close">ปิด</button>
+  <button class="btn-confirm ${done?'done':''}" id="det-acc" ${done?'disabled':''}>
+    ${done?'✓ ส่งคำขอแล้ว':'💬 ขอแลกเปลี่ยน & แชท'}
+  </button>
+</div>`;
+    openPanel('det-ov');
+    $('#det-close').onclick = ()=>closePanel('det-ov');
+    $('#det-acc').onclick = ()=>{ 
+        accept(id, $('#det-acc')); 
+        closePanel('det-ov'); 
+        renderFeed(); 
+        renderMine(); 
+    };
+}
+
+// ---- FIRESTORE LISTENER ----
+function startFirestoreListener() {
+    const q = query(questsRef, orderBy('createdAt', 'desc'));
+    $('#feed-list').innerHTML = `<div class="empty"><span class="ico">⏳</span><p>กำลังโหลด...</p></div>`;
+    onSnapshot(q, async snapshot => {
+        if (snapshot.empty) {
+            for (const quest of SEED_QUESTS) {
+                await addDoc(questsRef, { ...quest, createdAt: serverTimestamp() });
+            }
+            return;
+        }
+        state.quests = snapshot.docs.map(doc => ({
+            id:   doc.id,
+            ...doc.data(),
+            time: timeAgo(doc.data().createdAt)
+        }));
+        renderFeed();
+        if ($('#scr-mine')?.classList.contains('active')) renderMine();
+    }, err => {
+        console.error('Firestore error:', err);
+        $('#feed-list').innerHTML = `<div class="empty"><span class="ico">❌</span><p>เชื่อมต่อฐานข้อมูลไม่ได้</p><p style="font-size:.82rem">${err.message}</p></div>`;
+    });
+}
+
+// ---- SCREENS ----
+function goScreen(name) {
+    $$('.screen').forEach(s=>s.classList.remove('active'));
+    const t = name === 'feed' ? $('#home-screen') : (name === 'landing' ? $('#landing-screen') : $(`#scr-${name}`));
+    if (t) t.classList.add('active');
+    $$('.nav-btn[data-scr]').forEach(b=>b.classList.remove('active'));
+    const nb = $(`.nav-btn[data-scr="${name}"]`);
+    if (nb) nb.classList.add('active');
+    
+    if (name === 'mine') renderMine();
+    if (name === 'chat') {
+        renderChatList($('#chat-search-in')?.value || '');
+        renderMessages();
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ---- PANELS ----
+function openPanel(id)  { $(`#${id}`).classList.add('open'); }
+function closePanel(id) { $(`#${id}`).classList.remove('open'); }
+
+// ---- RENDER FEED ----
+function renderFeed() {
+    const list = $('#feed-list');
+    const filtered = state.quests.filter(q => {
+        const mc = state.filter==='all' || q.category===state.filter;
+        const ms = !state.search || q.want.includes(state.search) || q.offer.includes(state.search) || q.desc.includes(state.search);
+        return mc && ms;
+    });
+    if (!filtered.length) {
+        list.innerHTML = `<div class="empty"><span class="ico">🔍</span><p>ไม่พบงานที่ตรงกับการค้นหา</p></div>`;
+        return;
+    }
+    list.innerHTML = filtered.map((q,i) => cardHTML(q,i)).join('');
+    $$('.card', list).forEach(c => c.addEventListener('click', ()=>openDetail(c.dataset.id)));
+    $$('.btn-accept', list).forEach(b => b.addEventListener('click', e=>{ e.stopPropagation(); accept(b.dataset.id, b); }));
+}
+
+function cardHTML(q, i) {
+    const done = state.accepted.has(q.id);
+    return `
+<div class="card" data-id="${q.id}" style="animation-delay:${i*.07}s">
+  <div class="card-meta">
+    <div class="card-author">
+      <img class="auth-av" width="28" height="28" src="${avURL(q.seed)}" alt="${q.author}">
+      <span class="auth-name">${q.author}</span>
+    </div>
+    <span class="card-time">${q.time}</span>
+  </div>
+  ${catPill(q.category)}
+  <h3 class="card-title">${q.want}</h3>
+  <div class="ex-row">
+    <span style="font-size:1.1rem">🤝</span>
+    <div>
+      <p class="ex-label">สิ่งที่ได้รับกลับมา</p>
+      <p class="ex-val">${q.offer}</p>
+    </div>
+  </div>
+  <p class="card-desc">${q.desc}</p>
+  <div class="card-footer">
+    ${durTag(q.duration)}
+    <button class="btn-accept ${done?'done':''}" data-id="${q.id}">
+      ${done?'💬 เปิดแชท':'ขอแลกเปลี่ยน'}
+    </button>
+  </div>
+</div>`;
+}
+
+// ---- RENDER MY QUESTS ----
+function renderMine() {
+    const list = $('#mine-list');
+    const mine = state.quests.filter(q=>state.accepted.has(q.id));
+    if (!mine.length) {
+        list.innerHTML = `<div class="empty"><span class="ico">🌱</span><p>ยังไม่มีการแลกเปลี่ยนเลยน้า</p><p style="font-size:.82rem">กลับไปหน้าหลักแล้วเลือกงานที่สนใจนะจ๊ะ</p></div>`;
+        return;
+    }
+    list.innerHTML = mine.map((q,i)=>cardHTML(q,i)).join('');
+    $$('.card', list).forEach(c=>c.addEventListener('click',()=>openDetail(c.dataset.id)));
+}
+
+// ---- INIT ----
+function init() {
+    startFirestoreListener();
+
+    // Navigation buttons
+    $$('.nav-btn[data-scr]').forEach(b=>b.addEventListener('click', ()=>goScreen(b.dataset.scr)));
+    
+    // Landing CTA & Actions
+    const enterFeed = () => {
+        $('#landing-screen').classList.remove('active');
+        $('#home-screen').classList.add('active');
+        goScreen('feed');
+    };
+
+    $('#start-btn')?.addEventListener('click', enterFeed);
+    $('#sign-in-btn')?.addEventListener('click', enterFeed);
+    $('#sign-up-btn')?.addEventListener('click', enterFeed);
+    $('#brand-home')?.addEventListener('click', () => goScreen('landing'));
+
+    // Hero post button
+    $('#hero-post-btn')?.addEventListener('click', () => {
+        enterFeed();
+        setTimeout(() => openPanel('post-ov'), 300);
+    });
+
+    // Landing category cards
+    $$('.cat-card[data-cat]').forEach(card => {
+        card.addEventListener('click', () => {
+            const cat = card.dataset.cat;
+            enterFeed();
+            $$('.chip').forEach(x => x.classList.remove('active'));
+            const targetChip = $(`.chip[data-cat="${cat}"]`);
+            if (targetChip) targetChip.classList.add('active');
+            state.filter = cat;
+            renderFeed();
+        });
+    });
+
+    $('#fab').addEventListener('click', ()=>openPanel('post-ov'));
+    $('#open-post').addEventListener('click', ()=>openPanel('post-ov'));
+    $('#profile-btn').addEventListener('click', ()=>{ $('#prof-name-in').value = $('.greeting').textContent.replace('สวัสดี, ','').replace('! 👋',''); buildAvPicker(); openPanel('prof-ov'); });
+    $('#open-profile').addEventListener('click', ()=>{ $('#prof-name-in').value = $('.greeting').textContent.replace('สวัสดี, ','').replace('! 👋',''); buildAvPicker(); openPanel('prof-ov'); });
+
+    // Chat Events
+    $('#chat-send-btn')?.addEventListener('click', () => {
+        sendChatMessage($('#chat-msg-input')?.value);
+    });
+    $('#chat-msg-input')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            sendChatMessage($('#chat-msg-input')?.value);
+        }
+    });
+    $('#chat-back-to-list')?.addEventListener('click', () => {
+        $('#chat-sidebar')?.classList.remove('room-open');
+    });
+    $('#chat-search-in')?.addEventListener('input', (e) => {
+        renderChatList(e.target.value);
+    });
+    $$('.quick-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            sendChatMessage(chip.dataset.text);
+        });
+    });
+    $('#chat-emoji-btn')?.addEventListener('click', () => {
+        const emojis = ['😊', '👋', '🎉', '🚀', '💻', '🤝', '👍', '☕'];
+        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+        const input = $('#chat-msg-input');
+        if (input) {
+            input.value += randomEmoji;
+            input.focus();
+        }
+    });
+    $('#chat-complete-btn')?.addEventListener('click', () => {
+        alert('🎉 ยินดีด้วยครับ! การแลกเปลี่ยนความรู้นี้เสร็จสมบูรณ์เรียบร้อยแล้ว');
+    });
+
+    // Overlays — click backdrop to close
+    $$('.overlay').forEach(ov=>ov.addEventListener('click', e=>{ if(e.target===ov) closePanel(ov.id); }));
+
+    // Search
+    $('#search-in').addEventListener('input', e=>{ state.search=e.target.value.toLowerCase(); renderFeed(); });
+
+    // Chips
+    $$('.chip').forEach(c=>c.addEventListener('click', ()=>{
+        $$('.chip').forEach(x=>x.classList.remove('active'));
+        c.classList.add('active');
+        state.filter = c.dataset.cat;
+        renderFeed();
+    }));
+
+    // Avatar picker
+    buildAvPicker();
+
+    // Save profile
+    $('#prof-save').addEventListener('click', ()=>{
+        const name = $('#prof-name-in').value.trim() || 'นักสำรวจความรู้';
+        syncProfile({ seed: selectedSeed, name });
+        const btn = $('#prof-save');
+        btn.textContent = '✓ บันทึกแล้ว!';
+        setTimeout(()=>{ btn.textContent='💾 บันทึก'; }, 1500);
+    });
+
+    // Post form — writes to Firestore
+    $('#post-submit').addEventListener('click', async ()=>{
+        const want  = $('#f-want').value.trim();
+        const offer = $('#f-offer').value.trim();
+        const desc  = $('#f-desc').value.trim();
+        const cat   = $('#f-cat').value;
+        const dur   = $('#f-dur').value;
+        if (!want || !offer) { alert('กรอกข้อมูลให้ครบก่อนน้า! 🙏'); return; }
+        const btn = $('#post-submit');
+        btn.textContent = '⏳ กำลังโพสต์...';
+        btn.disabled = true;
+        try {
+            const myName = $('.greeting').textContent.replace('สวัสดี, ','').replace('! 👋','') || 'นักสำรวจ';
+            await addDoc(questsRef, {
+                want, offer,
+                desc: desc || 'ไม่มีรายละเอียดเพิ่มเติม',
+                category: cat,
+                duration: dur,
+                author: myName,
+                seed: selectedSeed,
+                createdAt: serverTimestamp()
+            });
+            state.posted++;
+            $('#s-post').textContent = state.posted;
+            closePanel('post-ov');
+            goScreen('feed');
+            ['#f-want','#f-offer','#f-desc'].forEach(s=>$(s).value='');
+        } catch(e) {
+            alert('โพสต์ไม่สำเร็จ: ' + e.message);
+        } finally {
+            btn.textContent = '🚀 โพสต์งาน';
+            btn.disabled = false;
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
