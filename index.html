@@ -1510,10 +1510,11 @@
         
         <!-- Header -->
         <header class="landing-nav">
-            <a class="landing-logo" href="#landing-screen" aria-label="Questifly home"><span>Q</span>uestifly</a>
+            <a class="landing-logo" href="javascript:void(0)" id="landing-logo-btn" aria-label="Questifly home"><span>Q</span>uestifly</a>
             <div class="landing-menu">
                 <a href="#how-it-works" class="landing-link">วิธีใช้งาน</a>
                 <a href="#categories" class="landing-link">หมวดหมู่</a>
+                <button type="button" class="landing-link" id="landing-feed-btn" style="background:none;border:none;color:var(--green-bright);font-weight:700;cursor:pointer;">สำรวจงาน (หน้าหลัก) ↗</button>
             </div>
             <div class="landing-actions">
                 <button class="landing-signin" type="button" id="sign-in-btn">Sign In</button>
@@ -1904,7 +1905,7 @@
 import { initializeApp }                          from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getFirestore, collection, addDoc,
          onSnapshot, query, orderBy,
-         serverTimestamp, getDocs }               from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+         serverTimestamp }                        from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 // ---- FIREBASE CONFIG ----
 const app = initializeApp({
@@ -1963,26 +1964,98 @@ function buildAvPicker() {
         selectedSeed = btn.dataset.seed;
         picker.querySelectorAll('.av-opt').forEach(b=>b.classList.remove('selected'));
         btn.classList.add('selected');
-        $('#prof-av').src = avURL(selectedSeed);
+        if ($('#prof-av')) $('#prof-av').src = avURL(selectedSeed);
     }));
 }
 function syncProfile(profile) {
-    $('#user-av').src = avURL(profile.seed);
-    $('.greeting').textContent = `สวัสดี, ${profile.name}! 👋`;
-    $('#prof-name-disp').textContent = profile.name;
-    $('#prof-av').src = avURL(profile.seed);
+    if ($('#user-av')) $('#user-av').src = avURL(profile.seed);
+    if ($('.greeting')) $('.greeting').textContent = `สวัสดี, ${profile.name}! 👋`;
+    if ($('#prof-name-disp')) $('#prof-name-disp').textContent = profile.name;
+    if ($('#prof-av')) $('#prof-av').src = avURL(profile.seed);
 }
 
 // ---- SCREENS ----
 function goScreen(name) {
-    $$('.screen').forEach(s=>s.classList.remove('active'));
+    $$('.screen').forEach(s => s.classList.remove('active'));
     const t = name === 'feed' ? $('#home-screen') : (name === 'landing' ? $('#landing-screen') : $(`#scr-${name}`));
     if (t) t.classList.add('active');
-    $$('.nav-btn[data-scr]').forEach(b=>b.classList.remove('active'));
+    $$('.nav-btn[data-scr]').forEach(b => b.classList.remove('active'));
     const nb = $(`.nav-btn[data-scr="${name}"]`);
     if (nb) nb.classList.add('active');
-    if (name==='mine') renderMine();
+    
+    if (name === 'mine') renderMine();
+    if (name === 'chat') {
+        renderChatList($('#chat-search-in')?.value || '');
+        renderMessages();
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ---- PANELS ----
+function openPanel(id)  { $(`#${id}`)?.classList.add('open'); }
+function closePanel(id) { $(`#${id}`)?.classList.remove('open'); }
+
+// ---- RENDER FEED ----
+function renderFeed() {
+    const list = $('#feed-list');
+    if (!list) return;
+    const filtered = state.quests.filter(q => {
+        const mc = state.filter==='all' || q.category===state.filter;
+        const ms = !state.search || (q.want && q.want.toLowerCase().includes(state.search)) || (q.offer && q.offer.toLowerCase().includes(state.search)) || (q.desc && q.desc.toLowerCase().includes(state.search));
+        return mc && ms;
+    });
+    if (!filtered.length) {
+        list.innerHTML = `<div class="empty"><span class="ico">🔍</span><p>ไม่พบงานที่ตรงกับการค้นหา</p></div>`;
+        return;
+    }
+    list.innerHTML = filtered.map((q,i) => cardHTML(q,i)).join('');
+    $$('.card', list).forEach(c => c.addEventListener('click', ()=>openDetail(c.dataset.id)));
+    $$('.btn-accept', list).forEach(b => b.addEventListener('click', e=>{ e.stopPropagation(); accept(b.dataset.id, b); }));
+}
+
+function cardHTML(q, i) {
+    const done = state.accepted.has(q.id);
+    return `
+<div class="card" data-id="${q.id}" style="animation-delay:${i*.07}s">
+  <div class="card-meta">
+    <div class="card-author">
+      <img class="auth-av" width="28" height="28" src="${avURL(q.seed)}" alt="${q.author}">
+      <span class="auth-name">${q.author}</span>
+    </div>
+    <span class="card-time">${q.time}</span>
+  </div>
+  ${catPill(q.category)}
+  <h3 class="card-title">${q.want}</h3>
+  <div class="ex-row">
+    <span style="font-size:1.1rem">🤝</span>
+    <div>
+      <p class="ex-label">สิ่งที่ได้รับกลับมา</p>
+      <p class="ex-val">${q.offer}</p>
+    </div>
+  </div>
+  <p class="card-desc">${q.desc}</p>
+  <div class="card-footer">
+    ${durTag(q.duration)}
+    <button class="btn-accept ${done?'done':''}" data-id="${q.id}">
+      ${done?'💬 เปิดแชท':'ขอแลกเปลี่ยน'}
+    </button>
+  </div>
+</div>`;
+}
+
+// ---- RENDER MY QUESTS ----
+function renderMine() {
+    const list = $('#mine-list');
+    if (!list) return;
+    const mine = state.quests.filter(q=>state.accepted.has(q.id));
+    if (!mine.length) {
+        list.innerHTML = `<div class="empty"><span class="ico">🌱</span><p>ยังไม่มีการแลกเปลี่ยนเลยน้า</p><p style="font-size:.82rem">กลับไปหน้าหลักแล้วเลือกงานที่สนใจนะจ๊ะ</p></div>`;
+        return;
+    }
+    list.innerHTML = mine.map((q,i)=>cardHTML(q,i)).join('');
+    $$('.card', list).forEach(c=>c.addEventListener('click',()=>openDetail(c.dataset.id)));
+}
+
 // ---- CHAT STATE & SEED CONVERSATIONS ----
 let chatState = {
     activePartnerId: 'Sarocha',
@@ -2029,7 +2102,6 @@ let chatState = {
     ]
 };
 
-// Auto replies pool based on partner
 const PARTNER_REPLIES = [
     "ยินดีมากๆ เลยค่ะ! สะดวกเริ่มโทรคุยผ่าน Discord หรือ Google Meet ดีคะ? 😊",
     "ข้อนี้เข้าใจง่ายมากๆ เดี๋ยวเราแชร์ชีทสรุปและตัวอย่างให้ดูตอนเริ่มคุยนะ 💻✨",
@@ -2038,43 +2110,29 @@ const PARTNER_REPLIES = [
     "โอเคเลยค่ะ! เดี๋ยวเจอกันตามเวลานัดน้าา ตื่นเต้นมากที่จะได้เรียนรู้ทักษะใหม่ด้วยกัน 🎉"
 ];
 
-// Format current time HH:MM
 function getChatTime() {
     const now = new Date();
     return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 }
 
-// ---- PANELS ----
-function openPanel(id)  { $(`#${id}`).classList.add('open'); }
-function closePanel(id) { $(`#${id}`).classList.remove('open'); }
 // ---- CHAT FUNCTIONS ----
 function renderChatList(searchQuery = '') {
     const list = $('#chat-conversation-list');
     if (!list) return;
 
-// ---- RENDER FEED ----
-function renderFeed() {
-    const list = $('#feed-list');
-    const filtered = state.quests.filter(q => {
-        const mc = state.filter==='all' || q.category===state.filter;
-        const ms = !state.search || q.want.includes(state.search) || q.offer.includes(state.search) || q.desc.includes(state.search);
-        return mc && ms;
     const filtered = chatState.conversations.filter(c => {
         if (!searchQuery) return true;
         const q = searchQuery.toLowerCase();
         return c.partner.toLowerCase().includes(q) || c.questTitle.toLowerCase().includes(q);
     });
 
-    $('#chat-active-count').textContent = `${chatState.conversations.length} บทสนทนา`;
+    const countEl = $('#chat-active-count');
+    if (countEl) countEl.textContent = `${chatState.conversations.length} บทสนทนา`;
 
     if (!filtered.length) {
-        list.innerHTML = `<div class="empty"><span class="ico">🔍</span><p>ไม่พบงานที่ตรงกับการค้นหา</p></div>`;
         list.innerHTML = `<div class="empty" style="padding:40px 10px;"><span class="ico">🔍</span><p style="font-size:0.85rem">ไม่พบบทสนทนา</p></div>`;
         return;
     }
-    list.innerHTML = filtered.map((q,i) => cardHTML(q,i)).join('');
-    $$('.card', list).forEach(c => c.addEventListener('click', ()=>openDetail(c.dataset.id)));
-    $$('.btn-accept', list).forEach(b => b.addEventListener('click', e=>{ e.stopPropagation(); accept(b.dataset.id, b); }));
 
     list.innerHTML = filtered.map(c => {
         const lastMsg = c.messages[c.messages.length - 1];
@@ -2107,34 +2165,6 @@ function renderFeed() {
     });
 }
 
-function cardHTML(q, i) {
-    const done = state.accepted.has(q.id);
-    return `
-<div class="card" data-id="${q.id}" style="animation-delay:${i*.07}s">
-  <div class="card-meta">
-    <div class="card-author">
-      <img class="auth-av" width="28" height="28" src="${avURL(q.seed)}" alt="${q.author}">
-      <span class="auth-name">${q.author}</span>
-    </div>
-    <span class="card-time">${q.time}</span>
-  </div>
-  ${catPill(q.category)}
-  <h3 class="card-title">${q.want}</h3>
-  <div class="ex-row">
-    <span style="font-size:1.1rem">🤝</span>
-    <div>
-      <p class="ex-label">สิ่งที่ได้รับกลับมา</p>
-      <p class="ex-val">${q.offer}</p>
-    </div>
-  </div>
-  <p class="card-desc">${q.desc}</p>
-  <div class="card-footer">
-    ${durTag(q.duration)}
-    <button class="btn-accept ${done?'done':''}" data-id="${q.id}" ${done?'disabled':''}>
-      ${done?'✓ ส่งคำขอแล้ว':'ขอแลกเปลี่ยน'}
-    </button>
-  </div>
-</div>`;
 function selectConversation(partnerId) {
     chatState.activePartnerId = partnerId;
     const conv = chatState.conversations.find(c => c.id === partnerId);
@@ -2142,28 +2172,18 @@ function selectConversation(partnerId) {
 
     renderChatList($('#chat-search-in')?.value || '');
     renderMessages();
-
-    // Mobile UX: slide into room
     $('#chat-sidebar')?.classList.add('room-open');
 }
 
-// ---- RENDER MY QUESTS ----
-function renderMine() {
-    const list = $('#mine-list');
-    const mine = state.quests.filter(q=>state.accepted.has(q.id));
-    if (!mine.length) {
-        list.innerHTML = `<div class="empty"><span class="ico">🌱</span><p>ยังไม่มีการแลกเปลี่ยนเลยน้า</p><p style="font-size:.82rem">กลับไปหน้าหลักแล้วเลือกงานที่สนใจนะจ๊ะ</p></div>`;
-        return;
 function renderMessages() {
     const conv = chatState.conversations.find(c => c.id === chatState.activePartnerId);
     if (!conv) return;
 
-    // Header info
-    $('#chat-active-name').textContent = conv.partner;
-    $('#chat-active-av').src = avURL(conv.seed);
-    $('#typing-partner-name').textContent = conv.partner;
-    $('#chat-quest-title').textContent = conv.questTitle;
-    $('#chat-quest-dur').textContent = `⏱️ ${conv.duration}`;
+    if ($('#chat-active-name')) $('#chat-active-name').textContent = conv.partner;
+    if ($('#chat-active-av')) $('#chat-active-av').src = avURL(conv.seed);
+    if ($('#typing-partner-name')) $('#typing-partner-name').textContent = conv.partner;
+    if ($('#chat-quest-title')) $('#chat-quest-title').textContent = conv.questTitle;
+    if ($('#chat-quest-dur')) $('#chat-quest-dur').textContent = `⏱️ ${conv.duration}`;
 
     const wrap = $('#chat-messages-wrap');
     if (!wrap) return;
@@ -2214,14 +2234,12 @@ function sendChatMessage(text) {
     conv.messages.push({ sender: 'me', text: cleanText, time });
     conv.lastTime = time;
 
-    // Clear input
     const input = $('#chat-msg-input');
     if (input) input.value = '';
 
     renderMessages();
     renderChatList($('#chat-search-in')?.value || '');
 
-    // Trigger realistic typing indicator & auto-reply
     const typing = $('#chat-typing-indicator');
     if (typing) {
         setTimeout(() => {
@@ -2240,8 +2258,6 @@ function sendChatMessage(text) {
             renderChatList($('#chat-search-in')?.value || '');
         }, 1600);
     }
-    list.innerHTML = mine.map((q,i)=>cardHTML(q,i)).join('');
-    $$('.card', list).forEach(c=>c.addEventListener('click',()=>openDetail(c.dataset.id)));
 }
 
 function startChatWith(partnerName, questTitle, seed = 'Pim', duration = '30 นาที') {
@@ -2271,13 +2287,19 @@ function startChatWith(partnerName, questTitle, seed = 'Pim', duration = '30 น
 
 // ---- ACCEPT ----
 function accept(id, btn) {
-    if (state.accepted.has(id)) return;
+    if (state.accepted.has(id)) {
+        const q = state.quests.find(x => x.id === id);
+        if (q) startChatWith(q.author, `${q.want} ⇄ ${q.offer}`, q.seed, q.duration);
+        return;
+    }
     state.accepted.add(id);
-    $('#s-acc').textContent = state.accepted.size;
-    btn.textContent = '✓ ส่งคำขอแล้ว';
-    btn.classList.add('done');
-    btn.disabled = true;
-    btn.closest('.card').style.borderColor = '#5cba6e';
+    if ($('#s-acc')) $('#s-acc').textContent = state.accepted.size;
+    if (btn) {
+        btn.textContent = '💬 เปิดแชท';
+        btn.classList.add('done');
+        const card = btn.closest('.card');
+        if (card) card.style.borderColor = '#5cba6e';
+    }
 
     const q = state.quests.find(x => x.id === id);
     if (q) {
@@ -2305,14 +2327,12 @@ function openDetail(id) {
 <div style="margin-bottom:20px">${durTag(q.duration)}</div>
 <div class="det-footer">
   <button class="btn-close" id="det-close">ปิด</button>
-  <button class="btn-confirm ${done?'done':''}" id="det-acc" ${done?'disabled':''}>
-    ${done?'✓ ส่งคำขอแล้ว':'🚀 ขอแลกเปลี่ยน'}
-    ${done?'✓ ส่งคำขอแล้ว':'💬 ขอแลกเปลี่ยน & แชท'}
+  <button class="btn-confirm ${done?'done':''}" id="det-acc">
+    ${done?'💬 เปิดแชท':'💬 ขอแลกเปลี่ยน & แชท'}
   </button>
 </div>`;
     openPanel('det-ov');
     $('#det-close').onclick = ()=>closePanel('det-ov');
-    $('#det-acc').onclick = ()=>{ accept(id, $('#det-acc')); renderFeed(); renderMine(); };
     $('#det-acc').onclick = ()=>{ 
         accept(id, $('#det-acc')); 
         closePanel('det-ov'); 
@@ -2324,15 +2344,13 @@ function openDetail(id) {
 // ---- FIRESTORE LISTENER ----
 function startFirestoreListener() {
     const q = query(questsRef, orderBy('createdAt', 'desc'));
-    // Show loading skeleton
-    $('#feed-list').innerHTML = `<div class="empty"><span class="ico">⏳</span><p>กำลังโหลด...</p></div>`;
+    const feedList = $('#feed-list');
+    if (feedList) feedList.innerHTML = `<div class="empty"><span class="ico">⏳</span><p>กำลังโหลด...</p></div>`;
     onSnapshot(q, async snapshot => {
-        // Seed initial data if collection is empty
         if (snapshot.empty) {
             for (const quest of SEED_QUESTS) {
                 await addDoc(questsRef, { ...quest, createdAt: serverTimestamp() });
             }
-            return; // onSnapshot will fire again with the seeded data
             return;
         }
         state.quests = snapshot.docs.map(doc => ({
@@ -2341,116 +2359,36 @@ function startFirestoreListener() {
             time: timeAgo(doc.data().createdAt)
         }));
         renderFeed();
-        // Keep "Mine" tab in sync if active
         if ($('#scr-mine')?.classList.contains('active')) renderMine();
     }, err => {
         console.error('Firestore error:', err);
-        $('#feed-list').innerHTML = `<div class="empty"><span class="ico">❌</span><p>เชื่อมต่อฐานข้อมูลไม่ได้</p><p style="font-size:.82rem">${err.message}</p></div>`;
+        if (feedList) feedList.innerHTML = `<div class="empty"><span class="ico">❌</span><p>เชื่อมต่อฐานข้อมูลไม่ได้</p><p style="font-size:.82rem">${err.message}</p></div>`;
     });
-}
-
-// ---- SCREENS ----
-function goScreen(name) {
-    $$('.screen').forEach(s=>s.classList.remove('active'));
-    const t = name === 'feed' ? $('#home-screen') : (name === 'landing' ? $('#landing-screen') : $(`#scr-${name}`));
-    if (t) t.classList.add('active');
-    $$('.nav-btn[data-scr]').forEach(b=>b.classList.remove('active'));
-    const nb = $(`.nav-btn[data-scr="${name}"]`);
-    if (nb) nb.classList.add('active');
-    
-    if (name === 'mine') renderMine();
-    if (name === 'chat') {
-        renderChatList($('#chat-search-in')?.value || '');
-        renderMessages();
-    }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// ---- PANELS ----
-function openPanel(id)  { $(`#${id}`).classList.add('open'); }
-function closePanel(id) { $(`#${id}`).classList.remove('open'); }
-
-// ---- RENDER FEED ----
-function renderFeed() {
-    const list = $('#feed-list');
-    const filtered = state.quests.filter(q => {
-        const mc = state.filter==='all' || q.category===state.filter;
-        const ms = !state.search || q.want.includes(state.search) || q.offer.includes(state.search) || q.desc.includes(state.search);
-        return mc && ms;
-    });
-    if (!filtered.length) {
-        list.innerHTML = `<div class="empty"><span class="ico">🔍</span><p>ไม่พบงานที่ตรงกับการค้นหา</p></div>`;
-        return;
-    }
-    list.innerHTML = filtered.map((q,i) => cardHTML(q,i)).join('');
-    $$('.card', list).forEach(c => c.addEventListener('click', ()=>openDetail(c.dataset.id)));
-    $$('.btn-accept', list).forEach(b => b.addEventListener('click', e=>{ e.stopPropagation(); accept(b.dataset.id, b); }));
-}
-
-function cardHTML(q, i) {
-    const done = state.accepted.has(q.id);
-    return `
-<div class="card" data-id="${q.id}" style="animation-delay:${i*.07}s">
-  <div class="card-meta">
-    <div class="card-author">
-      <img class="auth-av" width="28" height="28" src="${avURL(q.seed)}" alt="${q.author}">
-      <span class="auth-name">${q.author}</span>
-    </div>
-    <span class="card-time">${q.time}</span>
-  </div>
-  ${catPill(q.category)}
-  <h3 class="card-title">${q.want}</h3>
-  <div class="ex-row">
-    <span style="font-size:1.1rem">🤝</span>
-    <div>
-      <p class="ex-label">สิ่งที่ได้รับกลับมา</p>
-      <p class="ex-val">${q.offer}</p>
-    </div>
-  </div>
-  <p class="card-desc">${q.desc}</p>
-  <div class="card-footer">
-    ${durTag(q.duration)}
-    <button class="btn-accept ${done?'done':''}" data-id="${q.id}">
-      ${done?'💬 เปิดแชท':'ขอแลกเปลี่ยน'}
-    </button>
-  </div>
-</div>`;
-}
-
-// ---- RENDER MY QUESTS ----
-function renderMine() {
-    const list = $('#mine-list');
-    const mine = state.quests.filter(q=>state.accepted.has(q.id));
-    if (!mine.length) {
-        list.innerHTML = `<div class="empty"><span class="ico">🌱</span><p>ยังไม่มีการแลกเปลี่ยนเลยน้า</p><p style="font-size:.82rem">กลับไปหน้าหลักแล้วเลือกงานที่สนใจนะจ๊ะ</p></div>`;
-        return;
-    }
-    list.innerHTML = mine.map((q,i)=>cardHTML(q,i)).join('');
-    $$('.card', list).forEach(c=>c.addEventListener('click',()=>openDetail(c.dataset.id)));
 }
 
 // ---- INIT ----
 function init() {
-    // Start Firestore real-time listener
     startFirestoreListener();
 
     // Navigation buttons
     $$('.nav-btn[data-scr]').forEach(b=>b.addEventListener('click', ()=>goScreen(b.dataset.scr)));
     
     // Landing CTA & Actions
-    const enterFeed = () => {
-        $('#landing-screen').classList.remove('active');
-        $('#home-screen').classList.add('active');
+    const enterFeed = (e) => {
+        if (e) e.preventDefault();
         goScreen('feed');
     };
 
     $('#start-btn')?.addEventListener('click', enterFeed);
     $('#sign-in-btn')?.addEventListener('click', enterFeed);
     $('#sign-up-btn')?.addEventListener('click', enterFeed);
+    $('#landing-logo-btn')?.addEventListener('click', enterFeed);
+    $('#landing-feed-btn')?.addEventListener('click', enterFeed);
     $('#brand-home')?.addEventListener('click', () => goScreen('landing'));
 
     // Hero post button
-    $('#hero-post-btn')?.addEventListener('click', () => {
+    $('#hero-post-btn')?.addEventListener('click', (e) => {
+        if (e) e.preventDefault();
         enterFeed();
         setTimeout(() => openPanel('post-ov'), 300);
     });
@@ -2468,11 +2406,20 @@ function init() {
         });
     });
 
-    $('#fab').addEventListener('click', ()=>openPanel('post-ov'));
-    $('#open-post').addEventListener('click', ()=>openPanel('post-ov'));
-    $('#profile-btn').addEventListener('click', ()=>{ $('#prof-name-in').value = $('.greeting').textContent.replace('สวัสดี, ','').replace('! 👋',''); buildAvPicker(); openPanel('prof-ov'); });
-    $('#open-profile').addEventListener('click', ()=>{ $('#prof-name-in').value = $('.greeting').textContent.replace('สวัสดี, ','').replace('! 👋',''); buildAvPicker(); openPanel('prof-ov'); });
-    $('#chat-btn').addEventListener('click', ()=>goScreen('mine'));
+    $('#fab')?.addEventListener('click', ()=>openPanel('post-ov'));
+    $('#open-post')?.addEventListener('click', ()=>openPanel('post-ov'));
+    $('#profile-btn')?.addEventListener('click', ()=>{ 
+        const nameDisp = $('.greeting')?.textContent.replace('สวัสดี, ','').replace('! 👋','') || 'นักสำรวจความรู้';
+        if ($('#prof-name-in')) $('#prof-name-in').value = nameDisp;
+        buildAvPicker(); 
+        openPanel('prof-ov'); 
+    });
+    $('#open-profile')?.addEventListener('click', ()=>{ 
+        const nameDisp = $('.greeting')?.textContent.replace('สวัสดี, ','').replace('! 👋','') || 'นักสำรวจความรู้';
+        if ($('#prof-name-in')) $('#prof-name-in').value = nameDisp;
+        buildAvPicker(); 
+        openPanel('prof-ov'); 
+    });
 
     // Chat Events
     $('#chat-send-btn')?.addEventListener('click', () => {
@@ -2512,7 +2459,7 @@ function init() {
     $$('.overlay').forEach(ov=>ov.addEventListener('click', e=>{ if(e.target===ov) closePanel(ov.id); }));
 
     // Search
-    $('#search-in').addEventListener('input', e=>{ state.search=e.target.value.toLowerCase(); renderFeed(); });
+    $('#search-in')?.addEventListener('input', e=>{ state.search=e.target.value.toLowerCase(); renderFeed(); });
 
     // Chips
     $$('.chip').forEach(c=>c.addEventListener('click', ()=>{
@@ -2526,27 +2473,31 @@ function init() {
     buildAvPicker();
 
     // Save profile
-    $('#prof-save').addEventListener('click', ()=>{
-        const name = $('#prof-name-in').value.trim() || 'นักสำรวจความรู้';
+    $('#prof-save')?.addEventListener('click', ()=>{
+        const name = $('#prof-name-in')?.value.trim() || 'นักสำรวจความรู้';
         syncProfile({ seed: selectedSeed, name });
         const btn = $('#prof-save');
-        btn.textContent = '✓ บันทึกแล้ว!';
-        setTimeout(()=>{ btn.textContent='💾 บันทึก'; }, 1500);
+        if (btn) {
+            btn.textContent = '✓ บันทึกแล้ว!';
+            setTimeout(()=>{ btn.textContent='💾 บันทึก'; }, 1500);
+        }
     });
 
     // Post form — writes to Firestore
-    $('#post-submit').addEventListener('click', async ()=>{
-        const want  = $('#f-want').value.trim();
-        const offer = $('#f-offer').value.trim();
-        const desc  = $('#f-desc').value.trim();
-        const cat   = $('#f-cat').value;
-        const dur   = $('#f-dur').value;
+    $('#post-submit')?.addEventListener('click', async ()=>{
+        const want  = $('#f-want')?.value.trim();
+        const offer = $('#f-offer')?.value.trim();
+        const desc  = $('#f-desc')?.value.trim();
+        const cat   = $('#f-cat')?.value;
+        const dur   = $('#f-dur')?.value;
         if (!want || !offer) { alert('กรอกข้อมูลให้ครบก่อนน้า! 🙏'); return; }
         const btn = $('#post-submit');
-        btn.textContent = '⏳ กำลังโพสต์...';
-        btn.disabled = true;
+        if (btn) {
+            btn.textContent = '⏳ กำลังโพสต์...';
+            btn.disabled = true;
+        }
         try {
-            const myName = $('.greeting').textContent.replace('สวัสดี, ','').replace('! 👋','') || 'นักสำรวจ';
+            const myName = $('.greeting')?.textContent.replace('สวัสดี, ','').replace('! 👋','') || 'นักสำรวจ';
             await addDoc(questsRef, {
                 want, offer,
                 desc: desc || 'ไม่มีรายละเอียดเพิ่มเติม',
@@ -2557,20 +2508,26 @@ function init() {
                 createdAt: serverTimestamp()
             });
             state.posted++;
-            $('#s-post').textContent = state.posted;
+            if ($('#s-post')) $('#s-post').textContent = state.posted;
             closePanel('post-ov');
             goScreen('feed');
-            ['#f-want','#f-offer','#f-desc'].forEach(s=>$(s).value='');
+            ['#f-want','#f-offer','#f-desc'].forEach(s=>{ if ($(s)) $(s).value=''; });
         } catch(e) {
             alert('โพสต์ไม่สำเร็จ: ' + e.message);
         } finally {
-            btn.textContent = '🚀 โพสต์งาน';
-            btn.disabled = false;
+            if (btn) {
+                btn.textContent = '🚀 โพสต์งาน';
+                btn.disabled = false;
+            }
         }
     });
 }
 
-document.addEventListener('DOMContentLoaded', init);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
 </script>
 </body>
 </html>
